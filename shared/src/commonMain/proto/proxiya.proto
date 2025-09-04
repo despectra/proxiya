@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package ru.despectra.proxiya;
+package ru.despectra.proxiya.proto;
 
 // Импорт всех протоколов для удобства использования
 import "common_types.proto";

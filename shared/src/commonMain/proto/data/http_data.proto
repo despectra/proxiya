@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package ru.despectra.proxiya.data;
+package ru.despectra.proxiya.proto.data;
 
 // HTTP запрос
 message HttpRequest {

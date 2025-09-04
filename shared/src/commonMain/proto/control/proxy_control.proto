@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package ru.despectra.proxiya.control;
+package ru.despectra.proxiya.proto.control;
 
 // Статус прокси
 enum ProxyStatus {

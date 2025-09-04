@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package ru.despectra.proxiya.control;
+package ru.despectra.proxiya.proto.control;
 
 import "control/proxy_control.proto";
 import "common_types.proto";
@@ -26,7 +26,7 @@ service ProxyManagementService {
   rpc GetControllerStatus(GetControllerStatusRequest) returns (ControllerStatus);
   
   // Удаление прокси (остановка + удаление из списка)
-  rpc DeleteProxy(DeleteProxyRequest) returns (ru.despectra.proxiya.common.Empty);
+  rpc DeleteProxy(DeleteProxyRequest) returns (ru.despectra.proxiya.proto.common.Empty);
 }
 
 // Запрос на запуск прокси

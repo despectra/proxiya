@@ -5,8 +5,9 @@ composeMultiplatform = "1.8.2"
 junit = "4.13.2"
 kotlin = "2.2.10"
 kotlinx-coroutines = "1.10.2"
-protobuf = "4.23.0"
+protobuf = "3.25.1"
 protobuf-plugin = "0.9.5"
+protobuf-kmp = "0.9.2"
 grpc = "1.62.2"
 grpc-kotlin = "1.4.1"
 
@@ -32,3 +33,4 @@ composeMultiplatform = { id = "org.jetbrains.compose", version.ref = "composeMul
 composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 protobuf = { id = "com.google.protobuf", version.ref = "protobuf-plugin" }
+protobufKmp = { id = "org.jetbrains.kotlin.plugin.protobuf", version.ref = "protobuf-kmp" }

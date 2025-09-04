@@ -7,13 +7,13 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            // Здесь будут зависимости для общих протоколов
+            // Общие зависимости
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
         }
         jvmMain.dependencies {
-            // JVM-специфичные зависимости для shared модуля
+            // JVM-специфичные зависимости
         }
     }
 }

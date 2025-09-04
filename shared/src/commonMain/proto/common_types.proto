@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package ru.despectra.proxiya.common;
+package ru.despectra.proxiya.proto.common;
 
 // Общие типы для всех сервисов Proxiya
 

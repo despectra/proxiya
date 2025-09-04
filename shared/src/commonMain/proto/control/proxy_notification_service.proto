@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package ru.despectra.proxiya.control;
+package ru.despectra.proxiya.proto.control;
 
 import "control/proxy_control.proto";
 import "common_types.proto";
@@ -8,16 +8,16 @@ import "common_types.proto";
 // Сервис для уведомлений от mitmproxy аддонов
 service ProxyNotificationService {
   // Оповещение контроллера о запуске прокси (вызывается из mitmproxy аддона)
-  rpc NotifyProxyStarted(NotifyProxyStartedRequest) returns (ru.despectra.proxiya.common.Empty);
+  rpc NotifyProxyStarted(NotifyProxyStartedRequest) returns (ru.despectra.proxiya.proto.common.Empty);
   
   // Оповещение контроллера об остановке прокси (вызывается из mitmproxy аддона)
-  rpc NotifyProxyStopped(NotifyProxyStoppedRequest) returns (ru.despectra.proxiya.common.Empty);
+  rpc NotifyProxyStopped(NotifyProxyStoppedRequest) returns (ru.despectra.proxiya.proto.common.Empty);
   
   // Оповещение об ошибке в работе прокси
-  rpc NotifyProxyError(NotifyProxyErrorRequest) returns (ru.despectra.proxiya.common.Empty);
+  rpc NotifyProxyError(NotifyProxyErrorRequest) returns (ru.despectra.proxiya.proto.common.Empty);
   
   // Периодическое уведомление о том, что прокси еще жив (heartbeat)
-  rpc Heartbeat(HeartbeatRequest) returns (ru.despectra.proxiya.common.Empty);
+  rpc Heartbeat(HeartbeatRequest) returns (ru.despectra.proxiya.proto.common.Empty);
 }
 
 // Оповещение о запуске прокси

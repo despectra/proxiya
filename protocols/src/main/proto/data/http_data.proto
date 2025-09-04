@@ -1,0 +1,60 @@
+syntax = "proto3";
+
+package ru.despectra.proxiya.proto.data;
+
+// HTTP запрос
+message HttpRequest {
+  // ID прокси, который перехватил запрос
+  string proxy_id = 1;
+  
+  // URL запроса
+  string url = 2;
+  
+  // HTTP метод (GET, POST, etc.)
+  string method = 3;
+  
+  // Заголовки запроса
+  map<string, string> headers = 4;
+  
+  // Тело запроса (может быть пустым)
+  bytes body = 5;
+  
+  // Время перехвата запроса (Unix timestamp в миллисекундах)
+  int64 timestamp = 6;
+  
+  // Дополнительная информация о клиенте
+  optional ClientInfo client_info = 7;
+}
+
+// HTTP ответ
+message HttpResponse {
+  // ID прокси, который перехватил ответ
+  string proxy_id = 1;
+  
+  // Статус код ответа (200, 404, etc.)
+  int32 status_code = 2;
+  
+  // Заголовки ответа
+  map<string, string> headers = 3;
+  
+  // Тело ответа
+  bytes body = 4;
+  
+  // Время перехвата ответа (Unix timestamp в миллисекундах)
+  int64 timestamp = 5;
+  
+  // Связанный запрос (для сопоставления)
+  optional string request_id = 6;
+}
+
+// Информация о клиенте
+message ClientInfo {
+  // IP адрес клиента
+  string client_ip = 1;
+  
+  // Порт клиента
+  int32 client_port = 2;
+  
+  // User-Agent (если есть)
+  optional string user_agent = 3;
+}
