@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package ru.despectra.proxiya.data;
+
+import "data/http_data.proto";
+import "common_types.proto";
+
+// Сервис для передачи перехваченных HTTP данных
+service ProxyDataService {
+  // Отправка перехваченного HTTP запроса в контроллер
+  rpc SendRequest(HttpRequest) returns (Empty);
+  
+  // Отправка перехваченного HTTP ответа в контроллер
+  rpc SendResponse(HttpResponse) returns (Empty);
+  
+  // Потоковая передача запросов (для высокой нагрузки)
+  rpc StreamRequests(stream HttpRequest) returns (Empty);
+  
+  // Потоковая передача ответов (для высокой нагрузки)
+  rpc StreamResponses(stream HttpResponse) returns (Empty);
+}
+

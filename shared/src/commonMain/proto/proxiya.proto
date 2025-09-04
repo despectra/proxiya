@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package ru.despectra.proxiya;
+
+// Импорт всех протоколов для удобства использования
+import "common_types.proto";
+import "data/http_data.proto";
+import "data/proxy_data_service.proto";
+import "control/proxy_control.proto";
+import "control/proxy_management_service.proto";
+import "control/proxy_notification_service.proto";
+
+// Этот файл служит точкой входа для всех протоколов Proxiya
+// Используется для генерации общих типов и сервисов

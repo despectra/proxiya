@@ -1,0 +1,95 @@
+syntax = "proto3";
+
+package ru.despectra.proxiya.control;
+
+// Статус прокси
+enum ProxyStatus {
+  PROXY_STATUS_UNKNOWN = 0;
+  PROXY_STATUS_STOPPED = 1;
+  PROXY_STATUS_STARTING = 2;
+  PROXY_STATUS_RUNNING = 3;
+  PROXY_STATUS_STOPPING = 4;
+  PROXY_STATUS_ERROR = 5;
+}
+
+// Параметры для создания прокси
+message ProxyConfig {
+  // ID прокси (генерируется автоматически или задается пользователем)
+  string proxy_id = 1;
+  
+  // Порт для прокси
+  int32 port = 2;
+  
+  // Дополнительные параметры запуска mitmproxy
+  repeated string mitmproxy_args = 3;
+  
+  // Настройки gRPC подключения к контроллеру
+  optional GrpcConfig grpc_config = 4;
+}
+
+// Настройки gRPC подключения
+message GrpcConfig {
+  // Хост контроллера
+  string host = 1;
+  
+  // Порт контроллера
+  int32 port = 2;
+  
+  // Использовать TLS
+  optional bool use_tls = 3;
+}
+
+// Информация о прокси
+message ProxyInfo {
+  // ID прокси
+  string proxy_id = 1;
+  
+  // Порт прокси
+  int32 port = 2;
+  
+  // Статус прокси
+  ProxyStatus status = 3;
+  
+  // PID процесса (если запущен)
+  optional int32 pid = 4;
+  
+  // Время создания
+  int64 created_at = 5;
+  
+  // Время последнего обновления статуса
+  int64 last_updated = 6;
+  
+  // Ошибка (если есть)
+  optional string error_message = 7;
+  
+  // Оригинальная команда запуска
+  optional string command = 8;
+}
+
+// Общий статус контроллера
+message ControllerStatus {
+  // Статус контроллера
+  ControllerState state = 1;
+  
+  // Количество активных прокси
+  int32 active_proxies_count = 2;
+  
+  // Список всех прокси
+  repeated ProxyInfo proxies = 3;
+  
+  // Время последнего обновления
+  int64 last_updated = 4;
+  
+  // Версия контроллера
+  optional string version = 5;
+}
+
+// Состояние контроллера
+enum ControllerState {
+  CONTROLLER_STATE_UNKNOWN = 0;
+  CONTROLLER_STATE_STARTING = 1;
+  CONTROLLER_STATE_RUNNING = 2;
+  CONTROLLER_STATE_STOPPING = 3;
+  CONTROLLER_STATE_STOPPED = 4;
+  CONTROLLER_STATE_ERROR = 5;
+}
