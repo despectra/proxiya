@@ -1,0 +1,16 @@
+---
+description: Правила для работы с протками (Protobuf) и gRPC
+globs: *.proto
+---
+
+# Протоколы и gRPC
+
+## Протоколы (Protobuf)
+- Называй протки в единственном числе: `Request`, `Response`, `ProxyStatus`
+- Используй snake_case для полей в .proto файлах
+- Группируй связанные протки в одном .proto файле
+
+## gRPC сервисы
+- Называй сервисы с суффиксом `Service`: `ProxyDataService`, `ProxyControlService`
+- Используй async/await для асинхронных операций
+- Обрабатывай ошибки gRPC корректно
