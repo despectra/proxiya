@@ -8,15 +8,15 @@ import "common_types.proto";
 // Сервис для передачи перехваченных HTTP данных
 service ProxyDataService {
   // Отправка перехваченного HTTP запроса в контроллер
-  rpc SendRequest(HttpRequest) returns (Empty);
+  rpc SendRequest(HttpRequest) returns (ru.despectra.proxiya.common.Empty);
   
   // Отправка перехваченного HTTP ответа в контроллер
-  rpc SendResponse(HttpResponse) returns (Empty);
+  rpc SendResponse(HttpResponse) returns (ru.despectra.proxiya.common.Empty);
   
   // Потоковая передача запросов (для высокой нагрузки)
-  rpc StreamRequests(stream HttpRequest) returns (Empty);
+  rpc StreamRequests(stream HttpRequest) returns (ru.despectra.proxiya.common.Empty);
   
   // Потоковая передача ответов (для высокой нагрузки)
-  rpc StreamResponses(stream HttpResponse) returns (Empty);
+  rpc StreamResponses(stream HttpResponse) returns (ru.despectra.proxiya.common.Empty);
 }
 
