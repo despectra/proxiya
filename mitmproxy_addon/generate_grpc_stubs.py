@@ -15,7 +15,7 @@ def generate_grpc_stubs():
     # Пути к файлам
     script_dir = Path(__file__).parent
     project_root = script_dir.parent
-    proto_dir = project_root / "shared" / "src" / "commonMain" / "proto"
+    proto_dir = project_root / "protocols" / "src" / "main" / "proto"
     output_dir = script_dir / "generated"
     venv_python = script_dir / "venv" / "bin" / "python"
     
