@@ -1,0 +1,103 @@
+---
+description: Основные сведения о mitmproxy API
+glob: ./**/*.py
+---
+
+## Введение
+
+Mitmproxy — это набор инструментов для перехвата и анализа HTTP(S) трафика. Он предоставляет несколько интерфейсов:
+
+- **mitmproxy**: Консольный интерфейс для интерактивного перехвата и модификации трафика.
+- **mitmweb**: Веб-интерфейс для работы с трафиком через браузер.
+- **mitmdump**: Командный интерфейс для записи и воспроизведения трафика.
+
+## Аддоны
+
+Аддоны в mitmproxy позволяют расширять функциональность путем обработки различных событий. Они представляют собой классы или модули с методами, соответствующими определенным событиям.
+
+### Структура аддона
+
+Пример простого аддона, который считает количество обработанных запросов:
+
+```python
+import logging
+
+class Counter:
+    def __init__(self):
+        self.num = 0
+
+    def request(self, flow):
+        self.num += 1
+        logging.info(f"Обработано {self.num} запросов")
+
+addons = [Counter()]
+```
+
+В этом примере:
+
+- `request(self, flow)`: Метод, вызываемый при каждом HTTP-запросе.
+- `flow`: Объект, представляющий текущий HTTP-запрос и ответ.
+
+### Сокращенный синтаксис
+
+Для простых сценариев можно использовать модульный уровень без создания класса:
+
+```python
+def request(flow):
+    flow.request.headers["X-Custom-Header"] = "Value"
+```
+
+## События
+
+Аддоны взаимодействуют с mitmproxy через обработку событий. Некоторые из ключевых событий:
+
+- `request(flow)`: Вызывается при получении полного HTTP-запроса.
+- `response(flow)`: Вызывается при получении полного HTTP-ответа.
+- `client_connected(client)`: Вызывается при подключении клиента к mitmproxy.
+- `client_disconnected(client)`: Вызывается при отключении клиента от mitmproxy.
+
+## Асинхронные операции
+
+Для выполнения асинхронных задач в аддонах рекомендуется использовать `async` функции или декоратор `@concurrent`:
+
+```python
+from mitmproxy import ctx
+from mitmproxy.script import concurrent
+
+@concurrent
+def request(flow):
+    # Асинхронная обработка запроса
+    pass
+```
+
+## Доступ к данным запроса и ответа
+
+Объект `flow` предоставляет доступ к различным аспектам HTTP-трафика:
+
+- `flow.request.url`: URL запроса.
+- `flow.request.method`: HTTP-метод.
+- `flow.request.headers`: Заголовки запроса.
+- `flow.request.content`: Тело запроса.
+- `flow.response.status_code`: Статус-код ответа.
+- `flow.response.headers`: Заголовки ответа.
+- `flow.response.content`: Тело ответа.
+
+## Пример аддона с асинхронной обработкой
+
+```python
+import asyncio
+from mitmproxy import ctx
+
+class AsyncAddon:
+    async def request(self, flow):
+        await asyncio.sleep(1)  # Асинхронная операция
+        ctx.log.info("Асинхронная обработка запроса завершена")
+
+addons = [AsyncAddon()]
+```
+
+## Полезные ссылки
+
+- [Обзор аддонов](https://docs.mitmproxy.org/stable/addons/overview/)
+- [События API](https://docs.mitmproxy.org/stable/api/events.html)
+- [Примеры аддонов](https://docs.mitmproxy.org/stable/addons/examples/#nonblocking)
