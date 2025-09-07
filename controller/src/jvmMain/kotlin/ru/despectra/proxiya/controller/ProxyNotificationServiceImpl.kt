@@ -4,23 +4,32 @@ import org.slf4j.LoggerFactory
 import ru.despectra.proxiya.proto.common.CommonTypes
 import ru.despectra.proxiya.proto.control.ProxyControl
 import ru.despectra.proxiya.proto.control.ProxyNotificationServiceGrpcKt
-import ru.despectra.proxiya.proto.control.ProxyNotificationServiceOuterClass
+import ru.despectra.proxiya.proto.control.ProxyNotificationServiceOuterClass.*
 
 /**
  * Реализация gRPC сервиса для уведомлений от mitmproxy аддонов
  */
 class ProxyNotificationServiceImpl(
-    private val controller: ProxiyaController
+    private val proxyRepository: ProxyRepository,
+    private val proxyProcessRepository: ProxyProcessRepository
 ) : ProxyNotificationServiceGrpcKt.ProxyNotificationServiceCoroutineImplBase() {
+
+    interface ProxyRepository {
+        fun updateProxy(proxyId: String, update: (ProxyControl.ProxyInfo) -> ProxyControl.ProxyInfo)
+    }
+
+    interface ProxyProcessRepository {
+        fun removeProxyProcess(proxyId: String)
+    }
     
     private val logger = LoggerFactory.getLogger(ProxyNotificationServiceImpl::class.java)
     
-    override suspend fun notifyProxyStarted(request: ProxyNotificationServiceOuterClass.NotifyProxyStartedRequest): CommonTypes.Empty {
+    override suspend fun notifyProxyStarted(request: NotifyProxyStartedRequest): CommonTypes.Empty {
         try {
             logger.info("Proxy ${request.proxyId} started (PID: ${request.pid})")
             
             // Обновляем информацию о прокси
-            controller.updateProxy(request.proxyId) { proxyInfo ->
+            proxyRepository.updateProxy(request.proxyId) { proxyInfo ->
                 proxyInfo.toBuilder()
                     .setStatus(ProxyControl.ProxyStatus.PROXY_STATUS_RUNNING)
                     .setPid(request.pid)
@@ -39,12 +48,12 @@ class ProxyNotificationServiceImpl(
         return CommonTypes.Empty.getDefaultInstance()
     }
     
-    override suspend fun notifyProxyStopped(request: ProxyNotificationServiceOuterClass.NotifyProxyStoppedRequest): CommonTypes.Empty {
+    override suspend fun notifyProxyStopped(request: NotifyProxyStoppedRequest): CommonTypes.Empty {
         try {
             logger.info("Proxy ${request.proxyId} stopped (exit code: ${request.exitCode})")
             
             // Обновляем информацию о прокси
-            controller.updateProxy(request.proxyId) { proxyInfo ->
+            proxyRepository.updateProxy(request.proxyId) { proxyInfo ->
                 proxyInfo.toBuilder()
                     .setStatus(ProxyControl.ProxyStatus.PROXY_STATUS_STOPPED)
                     .setLastUpdated(System.currentTimeMillis())
@@ -53,7 +62,7 @@ class ProxyNotificationServiceImpl(
             }
             
             // Удаляем процесс из реестра
-            controller.removeProxyProcess(request.proxyId)
+            proxyProcessRepository.removeProxyProcess(request.proxyId)
             
             logger.info("Proxy ${request.proxyId} is now stopped")
             
@@ -65,12 +74,12 @@ class ProxyNotificationServiceImpl(
         return CommonTypes.Empty.getDefaultInstance()
     }
     
-    override suspend fun notifyProxyError(request: ProxyNotificationServiceOuterClass.NotifyProxyErrorRequest): CommonTypes.Empty {
+    override suspend fun notifyProxyError(request: NotifyProxyErrorRequest): CommonTypes.Empty {
         try {
             logger.error("Proxy ${request.proxyId} error: ${request.errorMessage} (type: ${request.errorType})")
             
             // Обновляем информацию о прокси
-            controller.updateProxy(request.proxyId) { proxyInfo ->
+            proxyRepository.updateProxy(request.proxyId) { proxyInfo ->
                 proxyInfo.toBuilder()
                     .setStatus(ProxyControl.ProxyStatus.PROXY_STATUS_ERROR)
                     .setLastUpdated(System.currentTimeMillis())
@@ -94,12 +103,12 @@ class ProxyNotificationServiceImpl(
         return CommonTypes.Empty.getDefaultInstance()
     }
     
-    override suspend fun heartbeat(request: ProxyNotificationServiceOuterClass.HeartbeatRequest): CommonTypes.Empty {
+    override suspend fun heartbeat(request: HeartbeatRequest): CommonTypes.Empty {
         try {
             logger.debug("Heartbeat from proxy ${request.proxyId}")
             
             // Обновляем время последней активности прокси
-            controller.updateProxy(request.proxyId) { proxyInfo ->
+            proxyRepository.updateProxy(request.proxyId) { proxyInfo ->
                 proxyInfo.toBuilder().setLastUpdated(System.currentTimeMillis()).build()
             }
             

@@ -3,15 +3,12 @@ package ru.despectra.proxiya.controller
 import io.grpc.BindableService
 import io.grpc.Server
 import io.grpc.ServerBuilder
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import org.slf4j.LoggerFactory
 import ru.despectra.proxiya.proto.control.ProxyControl
+import ru.despectra.proxiya.proto.control.ProxyManagementServiceOuterClass.ProxiesListState
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -33,6 +30,9 @@ class ProxiyaController(
     // Хранилище прокси
     private val proxies = ConcurrentHashMap<String, ProxyControl.ProxyInfo>()
     private val proxyProcesses = ConcurrentHashMap<String, Process>()
+    private val proxiesListState = MutableStateFlow<ProxiesListState>(
+        ProxiesListState.newBuilder().build()
+    )
     
     // Статистика
     private val totalRequests = AtomicInteger(0)
@@ -50,9 +50,80 @@ class ProxiyaController(
         logger.info("Starting Proxiya Controller on $host:$port")
         
         // Инициализируем сервисы
-        dataService = ProxyDataServiceImpl(this)
-        notificationService = ProxyNotificationServiceImpl(this)
-        managementService = ProxyManagementServiceImpl(this)
+        dataService = ProxyDataServiceImpl(
+            proxyRepository = object : ProxyDataServiceImpl.ProxyRepository {
+                override fun incrementRequestCount() {
+                    this@ProxiyaController.incrementRequestCount()
+                }
+
+                override fun incrementResponseCount() {
+                    this@ProxiyaController.incrementResponseCount()
+                }
+
+                override fun updateProxy(proxyId: String, update: (ProxyControl.ProxyInfo) -> ProxyControl.ProxyInfo) {
+                    this@ProxiyaController.updateProxy(proxyId, update)
+                }
+            }
+        )
+
+        notificationService = ProxyNotificationServiceImpl(
+            proxyRepository = object : ProxyNotificationServiceImpl.ProxyRepository {
+                override fun updateProxy(proxyId: String, update: (ProxyControl.ProxyInfo) -> ProxyControl.ProxyInfo) {
+                    this@ProxiyaController.updateProxy(proxyId, update)
+                }
+            },
+            proxyProcessRepository = object : ProxyNotificationServiceImpl.ProxyProcessRepository {
+                override fun removeProxyProcess(proxyId: String) {
+                    this@ProxiyaController.removeProxyProcess(proxyId)
+                }
+            }
+        )
+
+        managementService = ProxyManagementServiceImpl(
+            proxiesRepository = object : ProxyManagementServiceImpl.ProxiesRepository {
+                override fun addProxy(proxyInfo: ProxyControl.ProxyInfo) {
+                    this@ProxiyaController.addProxy(proxyInfo)
+                }
+
+                override fun removeProxy(proxyId: String) {
+                    this@ProxiyaController.removeProxy(proxyId)
+                }
+
+                override fun getProxy(proxyId: String): ProxyControl.ProxyInfo? {
+                    return this@ProxiyaController.getProxy(proxyId)
+                }
+
+                override fun updateProxy(
+                    proxyId: String,
+                    update: (ProxyControl.ProxyInfo) -> ProxyControl.ProxyInfo
+                ) {
+                    this@ProxiyaController.updateProxy(proxyId, update)
+                }
+
+                override val proxiesListState: StateFlow<ProxiesListState>
+                    get() = this@ProxiyaController.proxiesListState
+
+            },
+            proxyProcessesRepository = object : ProxyManagementServiceImpl.ProxyProcessRepository {
+                override fun addProxyProcess(proxyId: String, process: Process) {
+                    this@ProxiyaController.addProxyProcess(proxyId, process)
+                }
+
+                override fun removeProxyProcess(proxyId: String) {
+                    this@ProxiyaController.removeProxyProcess(proxyId)
+                }
+
+                override fun getProxyProcess(proxyId: String): Process? {
+                    return this@ProxiyaController.getProxyProcess(proxyId)
+                }
+
+            },
+            controllerStatusRepository = object : ProxyManagementServiceImpl.ControllerStatusRepository {
+                override fun getControllerStatus(): ProxyControl.ControllerStatus {
+                    return this@ProxiyaController.getControllerStatus()
+                }
+            },
+        )
         
         // Создаем gRPC сервер
         server = ServerBuilder.forPort(port)
@@ -204,35 +275,47 @@ class ProxiyaController(
     
     fun getProxy(proxyId: String): ProxyControl.ProxyInfo? = proxies[proxyId]
     
-    fun addProxy(proxyInfo: ProxyControl.ProxyInfo) {
+    private fun addProxy(proxyInfo: ProxyControl.ProxyInfo) {
         proxies[proxyInfo.proxyId] = proxyInfo
         logger.info("Added proxy: ${proxyInfo.proxyId}")
+        notifyProxiesChanged()
     }
     
-    fun removeProxy(proxyId: String) {
+    private fun removeProxy(proxyId: String) {
         proxies.remove(proxyId)
         logger.info("Removed proxy: $proxyId")
+        notifyProxiesChanged()
     }
     
-    fun updateProxy(proxyId: String, update: (ProxyControl.ProxyInfo) -> ProxyControl.ProxyInfo) {
+    private fun updateProxy(proxyId: String, update: (ProxyControl.ProxyInfo) -> ProxyControl.ProxyInfo) {
         proxies[proxyId]?.let { current ->
             val updated = update(current)
             proxies[proxyId] = updated
             logger.debug("Updated proxy: $proxyId")
         }
+        notifyProxiesChanged()
     }
     
-    fun addProxyProcess(proxyId: String, process: Process) {
+    private fun addProxyProcess(proxyId: String, process: Process) {
         proxyProcesses[proxyId] = process
         logger.info("Added proxy process: $proxyId (PID: ${process.pid()})")
     }
     
-    fun removeProxyProcess(proxyId: String) {
+    private fun removeProxyProcess(proxyId: String) {
         proxyProcesses.remove(proxyId)
         logger.info("Removed proxy process: $proxyId")
     }
     
-    fun getProxyProcess(proxyId: String): Process? = proxyProcesses[proxyId]
+    private fun getProxyProcess(proxyId: String): Process? = proxyProcesses[proxyId]
+    
+    private fun notifyProxiesChanged() {
+        val sortedProxies = proxies.values
+            .sortedBy { it.createdAt }
+            .toList()
+        proxiesListState.value = ProxiesListState.newBuilder()
+            .addAllProxyInfo(sortedProxies)
+            .build()
+    }
     
     fun incrementRequestCount() = totalRequests.incrementAndGet()
     
@@ -242,7 +325,7 @@ class ProxiyaController(
     
     fun getTotalResponses() = totalResponses.get()
     
-    fun getControllerStatus(): ProxyControl.ControllerStatus {
+    private fun getControllerStatus(): ProxyControl.ControllerStatus {
         val activeProxies = proxies.values.count { 
             it.status == ProxyControl.ProxyStatus.PROXY_STATUS_RUNNING
         }

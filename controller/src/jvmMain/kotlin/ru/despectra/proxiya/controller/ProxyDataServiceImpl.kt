@@ -3,6 +3,7 @@ package ru.despectra.proxiya.controller
 import kotlinx.coroutines.flow.Flow
 import org.slf4j.LoggerFactory
 import ru.despectra.proxiya.proto.common.CommonTypes
+import ru.despectra.proxiya.proto.control.ProxyControl
 import ru.despectra.proxiya.proto.data.HttpData
 import ru.despectra.proxiya.proto.data.ProxyDataServiceGrpcKt
 
@@ -10,9 +11,15 @@ import ru.despectra.proxiya.proto.data.ProxyDataServiceGrpcKt
  * Реализация gRPC сервиса для передачи данных от mitmproxy аддонов
  */
 class ProxyDataServiceImpl(
-    private val controller: ProxiyaController
+    private val proxyRepository: ProxyRepository,
 ) : ProxyDataServiceGrpcKt.ProxyDataServiceCoroutineImplBase() {
-    
+
+    interface ProxyRepository {
+        fun incrementRequestCount()
+        fun incrementResponseCount()
+        fun updateProxy(proxyId: String, update: (ProxyControl.ProxyInfo) -> ProxyControl.ProxyInfo)
+    }
+
     private val logger = LoggerFactory.getLogger(ProxyDataServiceImpl::class.java)
     
     override suspend fun sendRequest(request: HttpData.HttpRequest): CommonTypes.Empty {
@@ -20,10 +27,10 @@ class ProxyDataServiceImpl(
             logger.debug("Received HTTP request from proxy ${request.proxyId}: ${request.method} ${request.url}")
             
             // Обновляем статистику
-            controller.incrementRequestCount()
+            proxyRepository.incrementRequestCount()
             
             // Обновляем время последней активности прокси
-            controller.updateProxy(request.proxyId) { proxyInfo ->
+            proxyRepository.updateProxy(request.proxyId) { proxyInfo ->
                 proxyInfo.toBuilder()
                     .setLastUpdated(System.currentTimeMillis())
                     .build()
@@ -47,10 +54,10 @@ class ProxyDataServiceImpl(
             logger.debug("Received HTTP response from proxy ${request.proxyId}: ${request.statusCode}")
             
             // Обновляем статистику
-            controller.incrementResponseCount()
+            proxyRepository.incrementResponseCount()
             
             // Обновляем время последней активности прокси
-            controller.updateProxy(request.proxyId) { proxyInfo ->
+            proxyRepository.updateProxy(request.proxyId) { proxyInfo ->
                 proxyInfo.toBuilder()
                     .setLastUpdated(System.currentTimeMillis())
                     .build()
@@ -78,10 +85,10 @@ class ProxyDataServiceImpl(
                     logger.debug("Received streamed HTTP request from proxy ${request.proxyId}: ${request.method} ${request.url}")
                     
                     // Обновляем статистику
-                    controller.incrementRequestCount()
+                    proxyRepository.incrementRequestCount()
                     
                     // Обновляем время последней активности прокси
-                    controller.updateProxy(request.proxyId) { proxyInfo ->
+                    proxyRepository.updateProxy(request.proxyId) { proxyInfo ->
                         proxyInfo.toBuilder()
                             .setLastUpdated(System.currentTimeMillis())
                             .build()
@@ -113,10 +120,10 @@ class ProxyDataServiceImpl(
                     logger.debug("Received streamed HTTP response from proxy ${response.proxyId}: ${response.statusCode}")
                     
                     // Обновляем статистику
-                    controller.incrementResponseCount()
+                    proxyRepository.incrementResponseCount()
                     
                     // Обновляем время последней активности прокси
-                    controller.updateProxy(response.proxyId) { proxyInfo ->
+                    proxyRepository.updateProxy(response.proxyId) { proxyInfo ->
                         proxyInfo.toBuilder()
                             .setLastUpdated(System.currentTimeMillis())
                             .build()

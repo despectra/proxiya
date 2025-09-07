@@ -1,10 +1,12 @@
 package ru.despectra.proxiya.controller
 
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.StateFlow
 import org.slf4j.LoggerFactory
 import ru.despectra.proxiya.proto.common.CommonTypes
 import ru.despectra.proxiya.proto.control.ProxyControl
 import ru.despectra.proxiya.proto.control.ProxyManagementServiceGrpcKt
-import ru.despectra.proxiya.proto.control.ProxyManagementServiceOuterClass
+import ru.despectra.proxiya.proto.control.ProxyManagementServiceOuterClass.*
 import java.io.File
 import java.util.concurrent.TimeUnit
 
@@ -12,9 +14,29 @@ import java.util.concurrent.TimeUnit
  * Реализация gRPC сервиса для управления прокси
  */
 class ProxyManagementServiceImpl(
-    private val controller: ProxiyaController
+    private val proxiesRepository: ProxiesRepository,
+    private val proxyProcessesRepository: ProxyProcessRepository,
+    private val controllerStatusRepository: ControllerStatusRepository,
 ) : ProxyManagementServiceGrpcKt.ProxyManagementServiceCoroutineImplBase() {
-    
+
+    interface ProxiesRepository {
+        fun addProxy(proxyInfo: ProxyControl.ProxyInfo)
+        fun removeProxy(proxyId: String)
+        fun getProxy(proxyId: String): ProxyControl.ProxyInfo?
+        fun updateProxy(proxyId: String, update: (ProxyControl.ProxyInfo) -> ProxyControl.ProxyInfo)
+        val proxiesListState: StateFlow<ProxiesListState>
+    }
+
+    interface ProxyProcessRepository {
+        fun addProxyProcess(proxyId: String, process: Process)
+        fun removeProxyProcess(proxyId: String)
+        fun getProxyProcess(proxyId: String): Process?
+    }
+
+    interface ControllerStatusRepository {
+        fun getControllerStatus(): ProxyControl.ControllerStatus
+    }
+
     private val logger = LoggerFactory.getLogger(ProxyManagementServiceImpl::class.java)
     
     override suspend fun createProxy(request: ProxyControl.ProxyConfig): ProxyControl.ProxyInfo {
@@ -22,7 +44,7 @@ class ProxyManagementServiceImpl(
             logger.info("Creating proxy with ID: ${request.proxyId}")
             
             // Проверяем, не существует ли уже прокси с таким ID
-            if (controller.getProxy(request.proxyId) != null) {
+            if (proxiesRepository.getProxy(request.proxyId) != null) {
                 throw IllegalArgumentException("Proxy with ID '${request.proxyId}' already exists")
             }
             
@@ -36,7 +58,7 @@ class ProxyManagementServiceImpl(
                 .build()
             
             // Добавляем прокси в реестр
-            controller.addProxy(proxyInfo)
+            proxiesRepository.addProxy(proxyInfo)
             
             logger.info("Proxy ${request.proxyId} created successfully")
             
@@ -48,11 +70,11 @@ class ProxyManagementServiceImpl(
         }
     }
     
-    override suspend fun startProxy(request: ProxyManagementServiceOuterClass.StartProxyRequest): ProxyControl.ProxyInfo {
+    override suspend fun startProxy(request: StartProxyRequest): ProxyControl.ProxyInfo {
         try {
             logger.info("Starting proxy: ${request.proxyId}")
 
-            val proxyInfo = controller.getProxy(request.proxyId)
+            val proxyInfo = proxiesRepository.getProxy(request.proxyId)
                 ?: throw IllegalArgumentException("Proxy '${request.proxyId}' not found")
 
             if (proxyInfo.status == ProxyControl.ProxyStatus.PROXY_STATUS_RUNNING) {
@@ -60,8 +82,8 @@ class ProxyManagementServiceImpl(
             }
             
             // Обновляем статус на "запускается"
-            controller.updateProxy(request.proxyId) { current ->
-                current.toBuilder().setStatus(ProxyControl.ProxyStatus.PROXY_STATUS_STARTING).build()
+            proxiesRepository.updateProxy(request.proxyId) { currentProxy ->
+                currentProxy.toBuilder().setStatus(ProxyControl.ProxyStatus.PROXY_STATUS_STARTING).build()
             }
             
             // Запускаем процесс mitmproxy
@@ -69,15 +91,15 @@ class ProxyManagementServiceImpl(
             
             if (process != null) {
                 // Добавляем процесс в реестр
-                controller.addProxyProcess(request.proxyId, process)
+                proxyProcessesRepository.addProxyProcess(request.proxyId, process)
                 
                 logger.info("Proxy ${request.proxyId} started successfully (PID: ${process.pid()})")
                 
                 // Возвращаем обновленную информацию о прокси
-                return controller.getProxy(request.proxyId)!!
+                return proxiesRepository.getProxy(request.proxyId)!!
             } else {
                 // Обновляем статус на "ошибка"
-                controller.updateProxy(request.proxyId) { current ->
+                proxiesRepository.updateProxy(request.proxyId) { current ->
                     current.toBuilder()
                         .setStatus(ProxyControl.ProxyStatus.PROXY_STATUS_ERROR)
                         .setErrorMessage("Failed to start mitmproxy process")
@@ -91,7 +113,7 @@ class ProxyManagementServiceImpl(
             logger.error("Error starting proxy ${request.proxyId}", e)
             
             // Обновляем статус на "ошибка"
-            controller.updateProxy(request.proxyId) { current ->
+            proxiesRepository.updateProxy(request.proxyId) { current ->
                 current.toBuilder()
                     .setStatus(ProxyControl.ProxyStatus.PROXY_STATUS_ERROR)
                     .setErrorMessage("Startup error: ${e.message}")
@@ -102,21 +124,19 @@ class ProxyManagementServiceImpl(
         }
     }
     
-    override suspend fun stopProxy(request: ProxyManagementServiceOuterClass.StopProxyRequest): ProxyControl.ProxyInfo {
+    override suspend fun stopProxy(request: StopProxyRequest): ProxyControl.ProxyInfo {
         try {
             logger.info("Stopping proxy: ${request.proxyId}")
-            
-            val proxyInfo = controller.getProxy(request.proxyId)
-            if (proxyInfo == null) {
-                throw IllegalArgumentException("Proxy '${request.proxyId}' not found")
-            }
-            
+
+            val proxyInfo = proxiesRepository.getProxy(request.proxyId)
+                ?: throw IllegalArgumentException("Proxy '${request.proxyId}' not found")
+
             if (proxyInfo.status == ProxyControl.ProxyStatus.PROXY_STATUS_STOPPED) {
                 throw IllegalStateException("Proxy '${request.proxyId}' is already stopped")
             }
             
             // Обновляем статус на "останавливается"
-            controller.updateProxy(request.proxyId) { current ->
+            proxiesRepository.updateProxy(request.proxyId) { current ->
                 current.toBuilder().setStatus(ProxyControl.ProxyStatus.PROXY_STATUS_STOPPING).build()
             }
             
@@ -125,7 +145,7 @@ class ProxyManagementServiceImpl(
             
             if (success) {
                 // Обновляем статус на "остановлен"
-                controller.updateProxy(request.proxyId) { current ->
+                proxiesRepository.updateProxy(request.proxyId) { current ->
                     current.toBuilder()
                         .setStatus(ProxyControl.ProxyStatus.PROXY_STATUS_STOPPED)
                         .setLastUpdated(System.currentTimeMillis())
@@ -135,10 +155,10 @@ class ProxyManagementServiceImpl(
                 logger.info("Proxy ${request.proxyId} stopped successfully")
                 
                 // Возвращаем обновленную информацию о прокси
-                return controller.getProxy(request.proxyId)!!
+                return proxiesRepository.getProxy(request.proxyId)!!
             } else {
                 // Обновляем статус на "ошибка"
-                controller.updateProxy(request.proxyId) { current ->
+                proxiesRepository.updateProxy(request.proxyId) { current ->
                     current.toBuilder()
                         .setStatus(ProxyControl.ProxyStatus.PROXY_STATUS_ERROR)
                         .setErrorMessage("Failed to stop mitmproxy process")
@@ -153,7 +173,7 @@ class ProxyManagementServiceImpl(
             logger.error("Error stopping proxy ${request.proxyId}", e)
             
             // Обновляем статус на "ошибка"
-            controller.updateProxy(request.proxyId) { current ->
+            proxiesRepository.updateProxy(request.proxyId) { current ->
                 current.toBuilder()
                     .setStatus(ProxyControl.ProxyStatus.PROXY_STATUS_ERROR)
                     .setErrorMessage("Stop error: ${e.message}")
@@ -163,73 +183,37 @@ class ProxyManagementServiceImpl(
             throw e
         }
     }
-    
-    override suspend fun getProxy(request: ProxyManagementServiceOuterClass.GetProxyRequest): ProxyControl.ProxyInfo {
-        try {
-            val proxyInfo = controller.getProxy(request.proxyId)
-            
-            if (proxyInfo == null) {
-                throw IllegalArgumentException("Proxy '${request.proxyId}' not found")
-            }
-            
-            return proxyInfo
-            
-        } catch (e: Exception) {
-            logger.error("Error getting proxy ${request.proxyId}", e)
-            throw e
-        }
+
+    override fun streamProxies(request: StreamProxiesRequest): Flow<ProxiesListState> {
+        return proxiesRepository.proxiesListState
     }
     
-    override suspend fun listProxies(request: ProxyManagementServiceOuterClass.ListProxiesRequest): ProxyManagementServiceOuterClass.ListProxiesResponse {
+    override suspend fun getControllerStatus(request: GetControllerStatusRequest): ProxyControl.ControllerStatus {
         try {
-            val allProxies = controller.getProxies()
-            
-            // Фильтруем по статусу, если указан фильтр
-            val filteredProxies = if (request.hasStatusFilter()) {
-                allProxies.values.filter { it.status == request.statusFilter }
-            } else {
-                allProxies.values
-            }
-            
-            return ProxyManagementServiceOuterClass.ListProxiesResponse.newBuilder()
-                .addAllProxies(filteredProxies)
-                .build()
-            
-        } catch (e: Exception) {
-            logger.error("Error listing proxies", e)
-            throw e
-        }
-    }
-    
-    override suspend fun getControllerStatus(request: ProxyManagementServiceOuterClass.GetControllerStatusRequest): ProxyControl.ControllerStatus {
-        try {
-            return controller.getControllerStatus()
-            
+            return controllerStatusRepository.getControllerStatus()
         } catch (e: Exception) {
             logger.error("Error getting controller status", e)
             throw e
         }
     }
     
-    override suspend fun deleteProxy(request: ProxyManagementServiceOuterClass.DeleteProxyRequest): CommonTypes.Empty {
+    override suspend fun deleteProxy(request: DeleteProxyRequest): CommonTypes.Empty {
         try {
             logger.info("Deleting proxy: ${request.proxyId}")
-            
-            val proxyInfo = controller.getProxy(request.proxyId)
-            if (proxyInfo == null) {
-                throw IllegalArgumentException("Proxy '${request.proxyId}' not found")
-            }
-            
+
+            val proxyInfo = proxiesRepository.getProxy(request.proxyId)
+                ?: throw IllegalArgumentException("Proxy '${request.proxyId}' not found")
+
             // Если прокси запущен, сначала останавливаем его
             if (proxyInfo.status == ProxyControl.ProxyStatus.PROXY_STATUS_RUNNING) {
-                val stopRequest = ProxyManagementServiceOuterClass.StopProxyRequest.newBuilder()
+                val stopRequest = StopProxyRequest.newBuilder()
                     .setProxyId(request.proxyId)
                     .build()
                 stopProxy(stopRequest)
             }
             
             // Удаляем прокси из реестра
-            controller.removeProxy(request.proxyId)
+            proxiesRepository.removeProxy(request.proxyId)
             
             logger.info("Proxy ${request.proxyId} deleted successfully")
             
@@ -291,7 +275,7 @@ class ProxyManagementServiceImpl(
     private fun stopMitmproxyProcess(proxyId: String): Boolean {
         try {
             // Получаем процесс из реестра
-            val process = controller.getProxyProcess(proxyId)
+            val process = proxyProcessesRepository.getProxyProcess(proxyId)
             if (process == null) {
                 logger.warn("No process found for proxy $proxyId")
                 return true // Считаем успешным, если процесса нет
@@ -307,7 +291,7 @@ class ProxyManagementServiceImpl(
             
             if (terminated) {
                 logger.info("mitmproxy process stopped gracefully")
-                controller.removeProxyProcess(proxyId)
+                proxyProcessesRepository.removeProxyProcess(proxyId)
                 return true
             } else {
                 logger.warn("mitmproxy process did not stop gracefully, forcing...")
@@ -317,7 +301,7 @@ class ProxyManagementServiceImpl(
                 val forceTerminated = process.waitFor(2, TimeUnit.SECONDS)
                 if (forceTerminated) {
                     logger.info("mitmproxy process force stopped")
-                    controller.removeProxyProcess(proxyId)
+                    proxyProcessesRepository.removeProxyProcess(proxyId)
                     return true
                 } else {
                     logger.error("Failed to stop mitmproxy process")

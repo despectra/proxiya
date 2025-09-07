@@ -16,11 +16,8 @@ service ProxyManagementService {
   // Остановка прокси по ID
   rpc StopProxy(StopProxyRequest) returns (ProxyInfo);
   
-  // Получение информации о прокси по ID
-  rpc GetProxy(GetProxyRequest) returns (ProxyInfo);
-  
-  // Получение списка всех прокси
-  rpc ListProxies(ListProxiesRequest) returns (ListProxiesResponse);
+  // Стриминг списка прокси (обновления в реальном времени)
+  rpc StreamProxies(StreamProxiesRequest) returns (stream ProxiesListState);
   
   // Получение общего статуса контроллера
   rpc GetControllerStatus(GetControllerStatusRequest) returns (ControllerStatus);
@@ -39,20 +36,15 @@ message StopProxyRequest {
   string proxy_id = 1;
 }
 
-// Запрос на получение информации о прокси
-message GetProxyRequest {
-  string proxy_id = 1;
-}
-
-// Запрос на получение списка прокси
-message ListProxiesRequest {
+// Запрос на стриминг прокси
+message StreamProxiesRequest {
   // Фильтр по статусу (опционально)
   optional ProxyStatus status_filter = 1;
 }
 
-// Ответ со списком прокси
-message ListProxiesResponse {
-  repeated ProxyInfo proxies = 1;
+// Список всех имеющихся прокси
+message ProxiesListState {
+  repeated ProxyInfo proxy_info = 1;
 }
 
 // Запрос на получение статуса контроллера
