@@ -30,7 +30,7 @@ fun App() {
             Sidebar(
                 appNavViewModel = appNavigationViewModel,
                 modifier = Modifier
-                    .widthIn(min = 240.dp, max = 320.dp)
+                    .widthIn(min = 180.dp, max = 240.dp)
                     .fillMaxHeight()
             )
             
