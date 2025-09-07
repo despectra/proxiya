@@ -1,0 +1,92 @@
+package ru.despectra.proxiya.app
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import org.jetbrains.compose.ui.tooling.preview.Preview
+import ru.despectra.proxiya.app.component.Sidebar
+import ru.despectra.proxiya.app.viewmodel.AppNavigationViewModel
+import ru.despectra.proxiya.app.viewmodel.MainContentPage
+
+@Composable
+@Preview
+fun App() {
+    val appNavigationViewModel: AppNavigationViewModel = viewModel()
+    
+    MaterialTheme {
+        Row(
+            modifier = Modifier
+                .background(MaterialTheme.colorScheme.background)
+                .safeContentPadding()
+                .fillMaxSize(),
+        ) {
+            Sidebar(
+                appNavViewModel = appNavigationViewModel,
+                modifier = Modifier
+                    .widthIn(min = 240.dp, max = 320.dp)
+                    .fillMaxHeight()
+            )
+            
+            // Основная область контента
+            MainContentArea(
+                appNavigationViewModel = appNavigationViewModel,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun MainContentArea(
+    appNavigationViewModel: AppNavigationViewModel,
+    modifier: Modifier = Modifier
+) {
+    val currentPage = appNavigationViewModel.currentPage.collectAsState()
+    
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.Center
+    ) {
+        when (val page = currentPage.value) {
+            is MainContentPage.CreateProxyPage -> {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Создание нового прокси сервера",
+                        style = MaterialTheme.typography.headlineMedium
+                    )
+                    Text(
+                        text = "Здесь будет форма для создания прокси",
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
+            }
+            is MainContentPage.SelectedProxyPage -> {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Прокси сервер: ${page.proxyId}",
+                        style = MaterialTheme.typography.headlineMedium
+                    )
+                    Text(
+                        text = "Здесь будет информация о выбранном прокси",
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
+            }
+        }
+    }
+}
