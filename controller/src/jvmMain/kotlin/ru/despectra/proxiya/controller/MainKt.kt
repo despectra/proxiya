@@ -7,8 +7,8 @@ import kotlin.system.exitProcess
 /**
  * Главная точка входа для контроллера Proxiya
  */
-object Main {
-    private val logger = LoggerFactory.getLogger(Main::class.java)
+object MainKt {
+    private val logger = LoggerFactory.getLogger(MainKt::class.java)
     
     @JvmStatic
     fun main(args: Array<String>) {

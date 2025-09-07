@@ -30,4 +30,39 @@ kotlin {
     }
 }
 
-// Настройка для создания исполняемого JAR будет добавлена позже
+// Настройка для создания исполняемого JAR с зависимостями
+tasks.register<Jar>("fatJar") {
+    group = "build"
+    description = "Creates a fat JAR with all dependencies"
+    
+    archiveBaseName.set("proxiya-controller")
+    archiveVersion.set("")
+    archiveClassifier.set("")
+    
+    // Включаем все классы из jvmMain
+    from(sourceSets["jvmMain"].output)
+    
+    // Включаем все зависимости в JAR
+    from(configurations["jvmRuntimeClasspath"].map { config ->
+        if (config.isDirectory) config else zipTree(config)
+    })
+    
+    // Исключаем дублирующиеся файлы
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    
+    // Устанавливаем манифест с main class
+    manifest {
+        attributes(
+            "Main-Class" to "ru.despectra.proxiya.controller.MainKt",
+            "Implementation-Title" to "Proxiya Controller",
+            "Implementation-Version" to "1.0.0"
+        )
+    }
+}
+
+// Алиас для удобства
+tasks.register("buildJar") {
+    group = "build"
+    description = "Builds the executable JAR file"
+    dependsOn("fatJar")
+}
