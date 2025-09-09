@@ -12,7 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import org.jetbrains.compose.ui.tooling.preview.Preview
-import ru.despectra.proxiya.app.component.Sidebar
+import ru.despectra.proxiya.app.ui.component.Sidebar
 import ru.despectra.proxiya.app.viewmodel.AppNavigationViewModel
 import ru.despectra.proxiya.app.viewmodel.MainContentPage
 

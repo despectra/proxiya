@@ -1,4 +1,4 @@
-package ru.despectra.proxiya.app.component
+package ru.despectra.proxiya.app.ui.component
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
