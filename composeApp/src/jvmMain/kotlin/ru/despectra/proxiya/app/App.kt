@@ -10,8 +10,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import org.jetbrains.compose.ui.tooling.preview.Preview
+import org.koin.compose.viewmodel.koinViewModel
 import ru.despectra.proxiya.app.ui.component.Sidebar
 import ru.despectra.proxiya.app.viewmodel.AppNavigationViewModel
 import ru.despectra.proxiya.app.viewmodel.MainContentPage
@@ -19,7 +19,7 @@ import ru.despectra.proxiya.app.viewmodel.MainContentPage
 @Composable
 @Preview
 fun App() {
-    val appNavigationViewModel: AppNavigationViewModel = viewModel()
+    val appNavigationViewModel = koinViewModel<AppNavigationViewModel>()
     
     MaterialTheme {
         Row(

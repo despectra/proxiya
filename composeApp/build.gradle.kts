@@ -23,6 +23,7 @@ kotlin {
             implementation(project.dependencies.platform(libs.koin.bom))
             implementation(libs.koin.core)
             implementation(libs.koin.compose)
+            implementation(libs.koin.compose.viewmodel)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -30,7 +31,7 @@ kotlin {
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
-            implementation(libs.koin.jvm)
+            implementation(libs.koin.core.jvm)
             implementation(project(":protocols"))
             implementation(libs.grpc.netty)
             implementation(libs.grpc.kotlin.stub)

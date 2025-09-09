@@ -8,16 +8,24 @@ import androidx.compose.material.Text
 import androidx.compose.material.primarySurface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import org.koin.compose.viewmodel.koinViewModel
 import ru.despectra.proxiya.app.viewmodel.AppNavigationViewModel
 import ru.despectra.proxiya.app.viewmodel.MainContentPage
+import ru.despectra.proxiya.app.viewmodel.ProxyItemVo
+import ru.despectra.proxiya.app.viewmodel.SidebarViewModel
 
 @Composable
 fun Sidebar(appNavViewModel: AppNavigationViewModel, modifier: Modifier = Modifier) {
     val currentSelectedPage = appNavViewModel.currentPage.collectAsState()
+    val sidebarViewModel = koinViewModel<SidebarViewModel>()
+
+    val proxies by sidebarViewModel.proxiesFlow.collectAsState()
+    val selectedProxyId by sidebarViewModel.selectedProxyId.collectAsState()
 
     Column(
         modifier = modifier
@@ -28,34 +36,27 @@ fun Sidebar(appNavViewModel: AppNavigationViewModel, modifier: Modifier = Modifi
             onClick = { appNavViewModel.selectPage(MainContentPage.CreateProxyPage) }
         )
 
-        // TODO fetch proxies from controller gRPC interface
-        SidebarProxyItem(
-            proxyName = "Apphost Proxy",
-            proxyType = "SOCKS5",
-            port = 8890,
-            isSelected = currentSelectedPage.value == MainContentPage.SelectedProxyPage("SOCKS5 :8890"),
-            onClick = { appNavViewModel.selectPage(MainContentPage.SelectedProxyPage("SOCKS5 :8890")) }
-        )
-        SidebarProxyItem(
-            proxyName = "iOS Device Proxy",
-            proxyType = "HTTPS",
-            port = 8090,
-            isSelected = currentSelectedPage.value == MainContentPage.SelectedProxyPage("HTTPS :8090"),
-            onClick = { appNavViewModel.selectPage(MainContentPage.SelectedProxyPage("HTTPS :8090")) }
-        )
+        proxies.forEach { proxy ->
+            SidebarProxyItem(
+                proxyItemVo = proxy,
+                isSelected = selectedProxyId == proxy.id,
+                onClick = {
+                    sidebarViewModel.selectProxy(proxy.id)
+                    appNavViewModel.selectPage(MainContentPage.SelectedProxyPage(proxy.id))
+                }
+            )
+        }
     }
 }
 
 @Composable
 private fun SidebarProxyItem(
     modifier: Modifier = Modifier,
-    proxyName: String,
-    proxyType: String,
-    port: Int,
+    proxyItemVo: ProxyItemVo,
     isSelected: Boolean,
     onClick: () -> Unit,
 ) {
-    Box(
+    Row(
         modifier = modifier
             .fillMaxWidth()
             .height(56.dp) // Увеличиваем высоту для двух строк
@@ -69,8 +70,24 @@ private fun SidebarProxyItem(
             .clickable {
                 onClick()
             },
-        contentAlignment = Alignment.CenterStart,
+        horizontalArrangement = Arrangement.Start,
+        verticalAlignment = Alignment.CenterVertically,
     ) {
+        Box(
+            modifier = Modifier
+                .padding(all = 8.dp)
+                .size(8.dp)
+                .background(
+                    color = when (proxyItemVo.status) {
+                        ProxyItemVo.Status.IDLE -> Color.Gray
+                        ProxyItemVo.Status.TRANSIENT -> Color.Blue
+                        ProxyItemVo.Status.ACTIVE -> Color.Green
+                        ProxyItemVo.Status.ERROR -> Color.Red
+                    },
+                    shape = androidx.compose.foundation.shape.CircleShape
+                )
+        )
+
         Column(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
@@ -81,7 +98,7 @@ private fun SidebarProxyItem(
                 } else {
                     MaterialTheme.colors.onSurface
                 },
-                text = proxyName,
+                text = proxyItemVo.name,
                 style = MaterialTheme.typography.body1
             )
             
@@ -92,7 +109,7 @@ private fun SidebarProxyItem(
                 } else {
                     MaterialTheme.colors.onSurface.copy(alpha = 0.6f)
                 },
-                text = "$proxyType :$port",
+                text = "${proxyItemVo.type} :${proxyItemVo.port}",
                 style = MaterialTheme.typography.caption
             )
         }

@@ -12,6 +12,12 @@ enum ProxyStatus {
   PROXY_STATUS_ERROR = 5;
 }
 
+// Тип прокси
+enum ProxyType {
+  PROXY_HTTPS = 0;
+  PROXY_SOCKS_5 = 1;
+}
+
 // Параметры для создания прокси
 message ProxyConfig {
   // ID прокси (генерируется автоматически или задается пользователем)
@@ -46,24 +52,30 @@ message ProxyInfo {
   
   // Порт прокси
   int32 port = 2;
+
+  // human readable имя прокси сервера
+  string proxy_name = 3;
+
+  // Тип прокси
+  ProxyType proxy_type = 4;
   
   // Статус прокси
-  ProxyStatus status = 3;
+  ProxyStatus status = 5;
   
   // PID процесса (если запущен)
-  optional int32 pid = 4;
+  optional int32 pid = 6;
   
   // Время создания
-  int64 created_at = 5;
+  int64 created_at = 7;
   
   // Время последнего обновления статуса
-  int64 last_updated = 6;
+  int64 last_updated = 8;
   
   // Ошибка (если есть)
-  optional string error_message = 7;
+  optional string error_message = 9;
   
   // Оригинальная команда запуска
-  optional string command = 8;
+  optional string command = 10;
 }
 
 // Общий статус контроллера
