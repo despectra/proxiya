@@ -2,6 +2,7 @@ package ru.despectra.proxiya.app
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.Divider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,9 +24,9 @@ fun App() {
     MaterialTheme {
         Row(
             modifier = Modifier
+                .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
                 .safeContentPadding()
-                .fillMaxSize(),
         ) {
             Sidebar(
                 appNavViewModel = appNavigationViewModel,
@@ -33,8 +34,11 @@ fun App() {
                     .widthIn(min = 180.dp, max = 240.dp)
                     .fillMaxHeight()
             )
-            
-            // Основная область контента
+
+            Divider(
+                modifier = Modifier.fillMaxHeight().width(1.dp),
+            )
+
             MainContentArea(
                 appNavigationViewModel = appNavigationViewModel,
                 modifier = Modifier

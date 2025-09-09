@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import ru.despectra.proxiya.app.viewmodel.AppNavigationViewModel
 import ru.despectra.proxiya.app.viewmodel.MainContentPage
@@ -62,7 +63,7 @@ private fun SidebarProxyItem(
                 color = if (isSelected) {
                     MaterialTheme.colors.primarySurface
                 } else {
-                    MaterialTheme.colors.surface
+                    Color.Transparent
                 }
             )
             .clickable {
@@ -109,16 +110,16 @@ private fun SidebarItem(
         modifier = modifier
             .fillMaxWidth()
             .height(48.dp)
+            .clickable {
+                onClick()
+            }
             .background(
                 color = if (isSelected) {
                     MaterialTheme.colors.primarySurface
                 } else {
-                    MaterialTheme.colors.surface
+                    Color.Transparent
                 }
-            )
-            .clickable {
-                onClick()
-            },
+            ),
         contentAlignment = Alignment.CenterStart,
     ) {
         Text(
