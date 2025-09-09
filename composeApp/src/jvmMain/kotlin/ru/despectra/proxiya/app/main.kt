@@ -14,6 +14,7 @@ import ru.despectra.proxiya.app.data.ProxiesRepository
 import ru.despectra.proxiya.app.service.ProxyControlService
 import ru.despectra.proxiya.app.viewmodel.AppNavigationViewModel
 import ru.despectra.proxiya.app.viewmodel.SidebarViewModel
+import ru.despectra.proxiya.app.viewmodel.ThemeViewModel
 
 fun main() = application {
     val koinApp = startKoin {
@@ -45,6 +46,9 @@ fun main() = application {
                 }
                 viewModel<SidebarViewModel> {
                     SidebarViewModel(proxiesRepository = get())
+                }
+                viewModel<ThemeViewModel> {
+                    ThemeViewModel()
                 }
             }
         )

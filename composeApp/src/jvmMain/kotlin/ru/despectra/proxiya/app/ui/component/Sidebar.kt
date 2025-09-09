@@ -2,10 +2,17 @@ package ru.despectra.proxiya.app.ui.component
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
-import androidx.compose.material.primarySurface
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -46,6 +53,10 @@ fun Sidebar(appNavViewModel: AppNavigationViewModel, modifier: Modifier = Modifi
                 }
             )
         }
+        
+        Spacer(modifier = Modifier.weight(1f))
+        
+        ThemeToggle()
     }
 }
 
@@ -62,7 +73,7 @@ private fun SidebarProxyItem(
             .height(56.dp) // Увеличиваем высоту для двух строк
             .background(
                 color = if (isSelected) {
-                    MaterialTheme.colors.primarySurface
+                    MaterialTheme.colorScheme.primaryContainer
                 } else {
                     Color.Transparent
                 }
@@ -94,23 +105,23 @@ private fun SidebarProxyItem(
             // Первая строка - имя прокси основным текстом
             Text(
                 color = if (isSelected) {
-                    MaterialTheme.colors.onPrimary
+                    MaterialTheme.colorScheme.onPrimaryContainer
                 } else {
-                    MaterialTheme.colors.onSurface
+                    MaterialTheme.colorScheme.onSurface
                 },
                 text = proxyItemVo.name,
-                style = MaterialTheme.typography.body1
+                style = MaterialTheme.typography.bodyLarge
             )
             
             // Вторая строка - тип прокси и порт вторичным текстом
             Text(
                 color = if (isSelected) {
-                    MaterialTheme.colors.onPrimary.copy(alpha = 0.7f)
+                    MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
                 } else {
-                    MaterialTheme.colors.onSurface.copy(alpha = 0.6f)
+                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 },
                 text = "${proxyItemVo.type} :${proxyItemVo.port}",
-                style = MaterialTheme.typography.caption
+                style = MaterialTheme.typography.bodySmall
             )
         }
     }
@@ -132,7 +143,7 @@ private fun SidebarItem(
             }
             .background(
                 color = if (isSelected) {
-                    MaterialTheme.colors.primarySurface
+                    MaterialTheme.colorScheme.primaryContainer
                 } else {
                     Color.Transparent
                 }
@@ -142,12 +153,12 @@ private fun SidebarItem(
         Text(
             modifier = Modifier.padding(horizontal = 16.dp),
             color = if (isSelected) {
-                MaterialTheme.colors.onPrimary
+                MaterialTheme.colorScheme.onPrimaryContainer
             } else {
-                MaterialTheme.colors.onSurface
+                MaterialTheme.colorScheme.onSurface
             },
             text = title,
-            style = MaterialTheme.typography.body1,
+            style = MaterialTheme.typography.bodyLarge,
         )
     }
 }
