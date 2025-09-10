@@ -1,16 +1,20 @@
 package ru.despectra.proxiya.app.viewmodel
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
-import ru.despectra.proxiya.app.theme.ThemeMode
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import ru.despectra.proxiya.app.data.settings.AppSettingsRepository
+import ru.despectra.proxiya.app.data.settings.ThemeMode
 
-class ThemeViewModel : ViewModel() {
-    var themeMode by mutableStateOf(ThemeMode.SYSTEM)
-        private set
+class ThemeViewModel(
+    private val appSettingsRepository: AppSettingsRepository
+) : ViewModel() {
 
-    fun setTheme(mode: ThemeMode) {
-        themeMode = mode
-    }
+    val appTheme: StateFlow<ThemeMode>
+        get() = appSettingsRepository.settingsFlow
+            .map { it.theme }
+            .stateIn(viewModelScope, SharingStarted.Lazily, ThemeMode.SYSTEM)
 }

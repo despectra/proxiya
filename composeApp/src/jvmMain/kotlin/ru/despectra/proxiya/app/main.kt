@@ -5,16 +5,21 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowState
 import androidx.compose.ui.window.application
+import com.russhwolf.settings.PreferencesSettings
+import com.russhwolf.settings.Settings
 import org.koin.core.context.startKoin
 import org.koin.core.logger.PrintLogger
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 import org.koin.dsl.onClose
 import ru.despectra.proxiya.app.data.ProxiesRepository
+import ru.despectra.proxiya.app.data.settings.AppSettingsRepository
 import ru.despectra.proxiya.app.service.ProxyControlService
 import ru.despectra.proxiya.app.viewmodel.AppNavigationViewModel
+import ru.despectra.proxiya.app.viewmodel.SettingsViewModel
 import ru.despectra.proxiya.app.viewmodel.SidebarViewModel
 import ru.despectra.proxiya.app.viewmodel.ThemeViewModel
+import java.util.prefs.Preferences
 
 fun main() = application {
     val koinApp = startKoin {
@@ -37,6 +42,15 @@ fun main() = application {
                         proxyControlService = get(),
                     )
                 }
+
+                single<Settings> {
+                    PreferencesSettings.Factory(
+                        Preferences.userRoot(),
+                    ).create("ru.despectra.proxiya.app")
+                }
+                single<AppSettingsRepository> {
+                    AppSettingsRepository(settings = get())
+                }
             },
 
             // ViewModels
@@ -48,7 +62,10 @@ fun main() = application {
                     SidebarViewModel(proxiesRepository = get())
                 }
                 viewModel<ThemeViewModel> {
-                    ThemeViewModel()
+                    ThemeViewModel(appSettingsRepository = get())
+                }
+                viewModel<SettingsViewModel> {
+                    SettingsViewModel(appSettingsRepository = get())
                 }
             }
         )

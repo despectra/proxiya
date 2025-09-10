@@ -8,13 +8,13 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeContentPadding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.material3.Divider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -22,6 +22,7 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.koin.compose.viewmodel.koinViewModel
 import ru.despectra.proxiya.app.theme.ProxiyaTheme
 import ru.despectra.proxiya.app.ui.component.Sidebar
+import ru.despectra.proxiya.app.ui.screen.SettingsScreen
 import ru.despectra.proxiya.app.viewmodel.AppNavigationViewModel
 import ru.despectra.proxiya.app.viewmodel.MainContentPage
 import ru.despectra.proxiya.app.viewmodel.ThemeViewModel
@@ -31,7 +32,7 @@ import ru.despectra.proxiya.app.viewmodel.ThemeViewModel
 fun App() {
     val appNavigationViewModel = koinViewModel<AppNavigationViewModel>()
     val themeViewModel = koinViewModel<ThemeViewModel>()
-    val currentTheme = themeViewModel.themeMode
+    val currentTheme by themeViewModel.appTheme.collectAsState()
     
     ProxiyaTheme(themeMode = currentTheme) {
         Row(
@@ -47,15 +48,13 @@ fun App() {
                     .fillMaxHeight()
             )
 
-            Divider(
-                modifier = Modifier.fillMaxHeight().width(1.dp),
+            VerticalDivider(
+                modifier = Modifier,
             )
 
             MainContentArea(
                 appNavigationViewModel = appNavigationViewModel,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp)
+                modifier = Modifier.fillMaxSize()
             )
         }
     }
@@ -106,6 +105,9 @@ private fun MainContentArea(
                         modifier = Modifier.padding(top = 8.dp)
                     )
                 }
+            }
+            is MainContentPage.SettingsPage -> {
+                SettingsScreen()
             }
         }
     }

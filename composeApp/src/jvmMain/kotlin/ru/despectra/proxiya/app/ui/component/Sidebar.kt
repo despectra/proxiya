@@ -56,7 +56,11 @@ fun Sidebar(appNavViewModel: AppNavigationViewModel, modifier: Modifier = Modifi
         
         Spacer(modifier = Modifier.weight(1f))
         
-        ThemeToggle()
+        SidebarItem(
+            title = "Settings",
+            isSelected = currentSelectedPage.value == MainContentPage.SettingsPage,
+            onClick = { appNavViewModel.selectPage(MainContentPage.SettingsPage) }
+        )
     }
 }
 

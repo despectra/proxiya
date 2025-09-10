@@ -6,6 +6,7 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import ru.despectra.proxiya.app.data.settings.ThemeMode
 
 private val LightColorScheme = lightColorScheme(
     primary = Color(0xFF6750A4),
