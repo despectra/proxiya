@@ -1,4 +1,4 @@
-package ru.despectra.proxiya.app.data
+package ru.despectra.proxiya.app.data.proxy
 
 enum class ProxyType {
     Https,

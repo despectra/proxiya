@@ -1,6 +1,7 @@
 package ru.despectra.proxiya.app.data
 
 import kotlinx.coroutines.flow.Flow
+import ru.despectra.proxiya.app.data.proxy.ProxyType
 import ru.despectra.proxiya.app.service.ProxyControlService
 import ru.despectra.proxiya.app.utils.generateProxyId
 import ru.despectra.proxiya.proto.control.ProxyControl

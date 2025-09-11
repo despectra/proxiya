@@ -22,6 +22,7 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.koin.compose.viewmodel.koinViewModel
 import ru.despectra.proxiya.app.theme.ProxiyaTheme
 import ru.despectra.proxiya.app.ui.component.Sidebar
+import ru.despectra.proxiya.app.ui.screen.CreateProxyScreen
 import ru.despectra.proxiya.app.ui.screen.SettingsScreen
 import ru.despectra.proxiya.app.viewmodel.AppNavigationViewModel
 import ru.despectra.proxiya.app.viewmodel.MainContentPage
@@ -73,21 +74,7 @@ private fun MainContentArea(
     ) {
         when (val page = currentPage.value) {
             is MainContentPage.CreateProxyPage -> {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = "Создание нового прокси сервера",
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                    Text(
-                        text = "Здесь будет форма для создания прокси",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onBackground,
-                        modifier = Modifier.padding(top = 8.dp)
-                    )
-                }
+                CreateProxyScreen()
             }
             is MainContentPage.SelectedProxyPage -> {
                 Column(

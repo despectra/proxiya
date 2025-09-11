@@ -16,6 +16,7 @@ import ru.despectra.proxiya.app.data.ProxiesRepository
 import ru.despectra.proxiya.app.data.settings.AppSettingsRepository
 import ru.despectra.proxiya.app.service.ProxyControlService
 import ru.despectra.proxiya.app.viewmodel.AppNavigationViewModel
+import ru.despectra.proxiya.app.viewmodel.CreateProxyViewModel
 import ru.despectra.proxiya.app.viewmodel.SettingsViewModel
 import ru.despectra.proxiya.app.viewmodel.SidebarViewModel
 import ru.despectra.proxiya.app.viewmodel.ThemeViewModel
@@ -66,6 +67,9 @@ fun main() = application {
                 }
                 viewModel<SettingsViewModel> {
                     SettingsViewModel(appSettingsRepository = get())
+                }
+                viewModel<CreateProxyViewModel> {
+                    CreateProxyViewModel()
                 }
             }
         )
