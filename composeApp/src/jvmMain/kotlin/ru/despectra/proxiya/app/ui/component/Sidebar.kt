@@ -40,7 +40,10 @@ fun Sidebar(appNavViewModel: AppNavigationViewModel, modifier: Modifier = Modifi
         SidebarItem(
             title = "Create proxy",
             isSelected = currentSelectedPage.value == MainContentPage.CreateProxyPage,
-            onClick = { appNavViewModel.selectPage(MainContentPage.CreateProxyPage) }
+            onClick = {
+                appNavViewModel.selectPage(MainContentPage.CreateProxyPage)
+                sidebarViewModel.clearSelectedProxy()
+            }
         )
 
         proxies.forEach { proxy ->
@@ -59,7 +62,10 @@ fun Sidebar(appNavViewModel: AppNavigationViewModel, modifier: Modifier = Modifi
         SidebarItem(
             title = "Settings",
             isSelected = currentSelectedPage.value == MainContentPage.SettingsPage,
-            onClick = { appNavViewModel.selectPage(MainContentPage.SettingsPage) }
+            onClick = {
+                appNavViewModel.selectPage(MainContentPage.SettingsPage)
+                sidebarViewModel.clearSelectedProxy()
+            }
         )
     }
 }

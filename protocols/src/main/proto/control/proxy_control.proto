@@ -22,15 +22,21 @@ enum ProxyType {
 message ProxyConfig {
   // ID прокси (генерируется автоматически или задается пользователем)
   string proxy_id = 1;
+
+  // Имя прокси
+  string proxy_name = 2;
   
   // Порт для прокси
-  int32 port = 2;
+  int32 port = 3;
+
+  // Тип прокси
+  ProxyType proxy_type = 4;
   
   // Дополнительные параметры запуска mitmproxy
-  repeated string mitmproxy_args = 3;
+  repeated string mitmproxy_args = 5;
   
   // Настройки gRPC подключения к контроллеру
-  optional GrpcConfig grpc_config = 4;
+  optional GrpcConfig grpc_config = 6;
 }
 
 // Настройки gRPC подключения

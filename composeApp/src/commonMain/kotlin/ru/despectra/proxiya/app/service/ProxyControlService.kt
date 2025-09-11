@@ -9,11 +9,11 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import ru.despectra.proxiya.proto.control.ProxyControl
 import ru.despectra.proxiya.proto.control.ProxyManagementServiceGrpcKt
+import ru.despectra.proxiya.proto.control.ProxyManagementServiceOuterClass.DeleteProxyRequest
+import ru.despectra.proxiya.proto.control.ProxyManagementServiceOuterClass.ProxiesListState
 import ru.despectra.proxiya.proto.control.ProxyManagementServiceOuterClass.StartProxyRequest
 import ru.despectra.proxiya.proto.control.ProxyManagementServiceOuterClass.StopProxyRequest
-import ru.despectra.proxiya.proto.control.ProxyManagementServiceOuterClass.DeleteProxyRequest
 import ru.despectra.proxiya.proto.control.ProxyManagementServiceOuterClass.StreamProxiesRequest
-import ru.despectra.proxiya.proto.control.ProxyManagementServiceOuterClass.ProxiesListState
 import java.lang.AutoCloseable
 
 class ProxyControlService : AutoCloseable {

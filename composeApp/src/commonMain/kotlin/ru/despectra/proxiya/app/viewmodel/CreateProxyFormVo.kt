@@ -17,4 +17,11 @@ data class CreateProxyFormVo(
             additionalParams = "",
         )
     }
+
+    sealed interface SubmitResult {
+        data object Init : SubmitResult
+        data object InProgress : SubmitResult
+        data object Success : SubmitResult
+        data class Error(val message: String) : SubmitResult
+    }
 }

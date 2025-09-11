@@ -6,7 +6,12 @@ import org.slf4j.LoggerFactory
 import ru.despectra.proxiya.proto.common.CommonTypes
 import ru.despectra.proxiya.proto.control.ProxyControl
 import ru.despectra.proxiya.proto.control.ProxyManagementServiceGrpcKt
-import ru.despectra.proxiya.proto.control.ProxyManagementServiceOuterClass.*
+import ru.despectra.proxiya.proto.control.ProxyManagementServiceOuterClass.DeleteProxyRequest
+import ru.despectra.proxiya.proto.control.ProxyManagementServiceOuterClass.GetControllerStatusRequest
+import ru.despectra.proxiya.proto.control.ProxyManagementServiceOuterClass.ProxiesListState
+import ru.despectra.proxiya.proto.control.ProxyManagementServiceOuterClass.StartProxyRequest
+import ru.despectra.proxiya.proto.control.ProxyManagementServiceOuterClass.StopProxyRequest
+import ru.despectra.proxiya.proto.control.ProxyManagementServiceOuterClass.StreamProxiesRequest
 import java.io.File
 import java.util.concurrent.TimeUnit
 
@@ -51,7 +56,9 @@ class ProxyManagementServiceImpl(
             // Создаем информацию о прокси
             val proxyInfo = ProxyControl.ProxyInfo.newBuilder()
                 .setProxyId(request.proxyId)
+                .setProxyName(request.proxyName)
                 .setPort(request.port)
+                .setProxyType(request.proxyType)
                 .setStatus(ProxyControl.ProxyStatus.PROXY_STATUS_STOPPED)
                 .setCreatedAt(System.currentTimeMillis())
                 .setLastUpdated(System.currentTimeMillis())
@@ -232,10 +239,16 @@ class ProxyManagementServiceImpl(
         try {
             // Путь к аддону
             val addonPath = File("mitmproxy_addon/proxiya_addon.py").absolutePath
-            
+
+            val proxyMode = when (proxyInfo.proxyType) {
+                ProxyControl.ProxyType.PROXY_SOCKS_5 -> "socks5"
+                ProxyControl.ProxyType.PROXY_HTTPS,
+                ProxyControl.ProxyType.UNRECOGNIZED -> null
+            }
             // Команда для запуска mitmproxy
-            val command = mutableListOf(
+            val command = listOfNotNull(
                 "mitmdump",
+                proxyMode?.let { "--mode" }, proxyMode.orEmpty(),
                 "-s", addonPath,
                 "-p", proxyInfo.port.toString(),
                 "--set", "proxiya_proxy_id=${proxyInfo.proxyId}",

@@ -1,7 +1,7 @@
 package ru.despectra.proxiya.app.utils
 
-import kotlin.random.Random
 import java.security.MessageDigest
+import kotlin.random.Random
 
 fun generateProxyId(name: String, params: Map<String, String>): String {
     val timestamp = System.currentTimeMillis()

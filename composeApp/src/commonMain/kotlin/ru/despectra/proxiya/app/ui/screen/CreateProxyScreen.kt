@@ -2,8 +2,10 @@ package ru.despectra.proxiya.app.ui.screen
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.text.KeyboardOptions
@@ -23,12 +25,15 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import org.koin.compose.viewmodel.koinViewModel
 import ru.despectra.proxiya.app.data.proxy.ProxyType
+import ru.despectra.proxiya.app.theme.SpecialColors
+import ru.despectra.proxiya.app.viewmodel.CreateProxyFormVo
 import ru.despectra.proxiya.app.viewmodel.CreateProxyViewModel
 
 @Composable
 fun CreateProxyScreen(modifier: Modifier = Modifier) {
     val createProxyViewModel = koinViewModel<CreateProxyViewModel>()
     val formVo by createProxyViewModel.formState.collectAsState()
+    val submitResultVo by createProxyViewModel.submitResult.collectAsState()
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -75,8 +80,31 @@ fun CreateProxyScreen(modifier: Modifier = Modifier) {
         Button(
             onClick = createProxyViewModel::submit,
             modifier = Modifier.widthIn(min = 120.dp).padding(top = 16.dp),
+            enabled = submitResultVo != CreateProxyFormVo.SubmitResult.InProgress,
         ) {
             Text("Create")
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        when (val result = submitResultVo) {
+            CreateProxyFormVo.SubmitResult.Success -> {
+                Text(
+                    text = "Proxy created successfully",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = SpecialColors.success,
+                )
+            }
+            is CreateProxyFormVo.SubmitResult.Error -> {
+                Text(
+                    text = result.message,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+            else -> {
+                // Nothing
+            }
         }
     }
 }

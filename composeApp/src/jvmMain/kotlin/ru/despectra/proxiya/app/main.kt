@@ -12,7 +12,7 @@ import org.koin.core.logger.PrintLogger
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 import org.koin.dsl.onClose
-import ru.despectra.proxiya.app.data.ProxiesRepository
+import ru.despectra.proxiya.app.data.proxy.ProxiesRepository
 import ru.despectra.proxiya.app.data.settings.AppSettingsRepository
 import ru.despectra.proxiya.app.service.ProxyControlService
 import ru.despectra.proxiya.app.viewmodel.AppNavigationViewModel
@@ -69,7 +69,7 @@ fun main() = application {
                     SettingsViewModel(appSettingsRepository = get())
                 }
                 viewModel<CreateProxyViewModel> {
-                    CreateProxyViewModel()
+                    CreateProxyViewModel(proxiesRepository = get())
                 }
             }
         )

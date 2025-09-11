@@ -1,11 +1,10 @@
-package ru.despectra.proxiya.app.data
+package ru.despectra.proxiya.app.data.proxy
 
 import kotlinx.coroutines.flow.Flow
-import ru.despectra.proxiya.app.data.proxy.ProxyType
 import ru.despectra.proxiya.app.service.ProxyControlService
 import ru.despectra.proxiya.app.utils.generateProxyId
 import ru.despectra.proxiya.proto.control.ProxyControl
-import ru.despectra.proxiya.proto.control.ProxyManagementServiceOuterClass.ProxiesListState
+import ru.despectra.proxiya.proto.control.ProxyManagementServiceOuterClass
 import java.util.logging.Level
 import java.util.logging.Logger
 
@@ -26,14 +25,20 @@ class ProxiesRepository(
         )
         val proxyConfig = ProxyControl.ProxyConfig.newBuilder()
             .setProxyId(proxyId)
+            .setProxyName(name)
             .setPort(port)
-            .setMitmproxyArgs(0, additionalParams)
+            .setProxyType(when (proxyType) {
+                ProxyType.Https -> ProxyControl.ProxyType.PROXY_HTTPS
+                ProxyType.Socks5 -> ProxyControl.ProxyType.PROXY_SOCKS_5
+            })
+            .addMitmproxyArgs(additionalParams)
             .build()
 
         try {
             proxyControlService.createProxy(proxyConfig)
         } catch (e: Exception) {
             logger.log(Level.SEVERE, "Failed to create proxy", e)
+            throw e
         }
     }
 
@@ -61,7 +66,7 @@ class ProxiesRepository(
         }
     }
 
-    suspend fun proxiesFlow(): Flow<ProxiesListState> {
+    suspend fun proxiesFlow(): Flow<ProxyManagementServiceOuterClass.ProxiesListState> {
         return proxyControlService.streamProxies()
     }
 }
