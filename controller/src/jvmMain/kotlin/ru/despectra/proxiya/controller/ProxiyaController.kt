@@ -3,9 +3,15 @@ package ru.despectra.proxiya.controller
 import io.grpc.BindableService
 import io.grpc.Server
 import io.grpc.ServerBuilder
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import org.slf4j.LoggerFactory
 import ru.despectra.proxiya.proto.control.ProxyControl
 import ru.despectra.proxiya.proto.control.ProxyManagementServiceOuterClass.ProxiesListState
@@ -26,7 +32,7 @@ class ProxiyaController(
     
     private var server: Server? = null
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-    
+
     // Хранилище прокси
     private val proxies = ConcurrentHashMap<String, ProxyControl.ProxyInfo>()
     private val proxyProcesses = ConcurrentHashMap<String, Process>()

@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
+    kotlin("plugin.serialization") version "1.9.22"
 }
 
 kotlin {
@@ -23,9 +24,13 @@ kotlin {
             
             // Coroutines
             implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${libs.versions.kotlinx.coroutines.get()}")
+            
+            // YAML configuration with kotlinx.serialization
+            implementation("com.charleskorn.kaml:kaml:0.95.0")
         }
         jvmTest.dependencies {
             implementation(libs.kotlin.test)
+            implementation("org.junit.jupiter:junit-jupiter:5.10.1")
         }
     }
 }
