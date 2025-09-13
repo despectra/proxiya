@@ -64,6 +64,10 @@ class CreateProxyViewModel(
         }
     }
 
+    fun clearSubmitResult() {
+        _submitResult.value = CreateProxyFormVo.SubmitResult.Init
+    }
+
     private fun CreateProxyFormVo.validated(): Result<CreateProxyFormVo> {
         if (name.isBlank()) {
             return Result.failure(Exception("Name must not be empty"))
