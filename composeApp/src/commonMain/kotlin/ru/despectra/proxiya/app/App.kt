@@ -22,6 +22,7 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.koin.compose.viewmodel.koinViewModel
 import ru.despectra.proxiya.app.ui.component.Sidebar
 import ru.despectra.proxiya.app.ui.screen.CreateProxyScreen
+import ru.despectra.proxiya.app.ui.screen.ProxyMainScreen
 import ru.despectra.proxiya.app.ui.screen.SettingsScreen
 import ru.despectra.proxiya.app.ui.theme.ProxiyaTheme
 import ru.despectra.proxiya.app.ui.viewmodel.AppNavigationViewModel
@@ -77,21 +78,7 @@ private fun MainContentArea(
                 CreateProxyScreen()
             }
             is MainContentPage.SelectedProxyPage -> {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = "Прокси сервер: ${page.proxyId}",
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                    Text(
-                        text = "Здесь будет информация о выбранном прокси",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onBackground,
-                        modifier = Modifier.padding(top = 8.dp)
-                    )
-                }
+                ProxyMainScreen(proxyId = page.proxyId)
             }
             is MainContentPage.SettingsPage -> {
                 SettingsScreen()
