@@ -1,12 +1,15 @@
 package ru.despectra.proxiya.app.ui.screen
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
@@ -18,12 +21,16 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import compose.icons.FeatherIcons
 import compose.icons.feathericons.Play
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import ru.despectra.proxiya.app.data.settings.ThemeMode
 import ru.despectra.proxiya.app.theme.ProxiyaTheme
+import ru.despectra.proxiya.app.theme.SpecialColors
 
 @Composable
 fun ProxyMainScreen(modifier: Modifier = Modifier) {
@@ -55,11 +62,19 @@ private fun Header(modifier: Modifier = Modifier) {
                 style = MaterialTheme.typography.headlineSmall,
                 color = MaterialTheme.colorScheme.onSurface,
             )
-            Text(
-                text = "HTTP on port 8080, PID 1024236",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "HTTP on port 8080",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                )
+                Spacer(modifier = Modifier.padding(horizontal = 8.dp))
+                ProxyStatusBadge(
+                    proxyStatus = true,
+                    proxyProcessId = "18024",
+                    //proxyProcessId = null,
+                )
+            }
         }
 
         Spacer(modifier = Modifier.weight(1f))
@@ -81,6 +96,45 @@ private fun Header(modifier: Modifier = Modifier) {
                 color = MaterialTheme.colorScheme.onSurface,
             )
         }
+    }
+}
+
+@Composable
+private fun ProxyStatusBadge(
+    modifier: Modifier = Modifier,
+    proxyStatus: Boolean, // TODO real status
+    proxyProcessId: String? = null,
+) {
+    Box(
+        modifier = modifier
+            .height(24.dp)
+            .run {
+                if (proxyStatus) {
+                    clip(RoundedCornerShape(12.dp))
+                } else {
+                    border(
+                        width = 1.dp,
+                        color = SpecialColors.proxyStatusInactive,
+                        shape = RoundedCornerShape(12.dp),
+                    )
+                }
+            }
+            .background(
+                color = if (proxyStatus) {
+                    SpecialColors.proxyStatusRunning
+                } else {
+                    Color.Transparent
+                }
+            ),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            modifier = Modifier.padding(horizontal = 8.dp),
+            text = if (proxyStatus && proxyProcessId != null) "PID: $proxyProcessId" else "Inactive",
+            textAlign = TextAlign.Center,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = if (proxyStatus) 1f else 0.7f),
+        )
     }
 }
 

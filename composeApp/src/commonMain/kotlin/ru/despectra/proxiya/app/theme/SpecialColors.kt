@@ -12,6 +12,11 @@ data class SpecialColorScheme(
     val success: Color,
     val warning: Color,
     val info: Color,
+
+    // Proxy statuses
+    val proxyStatusInactive: Color,
+    val proxyStatusRunning: Color,
+    val proxyStatusError: Color,
 )
 
 /**
@@ -20,7 +25,11 @@ data class SpecialColorScheme(
 val LightSpecialColorScheme = SpecialColorScheme(
     success = Color(0xFF22AA11),
     warning = Color(0xFFFF8C00),
-    info = Color(0xFF2196F3)
+    info = Color(0xFF2196F3),
+
+    proxyStatusInactive = Color(0xFF4B4B4B),
+    proxyStatusRunning = Color(0xFF064006),
+    proxyStatusError = Color(0xFFFF0000),
 )
 
 /**
@@ -29,7 +38,11 @@ val LightSpecialColorScheme = SpecialColorScheme(
 val DarkSpecialColorScheme = SpecialColorScheme(
     success = Color(0xFF4CAF50),
     warning = Color(0xFFFFB74D),
-    info = Color(0xFF64B5F6)
+    info = Color(0xFF64B5F6),
+
+    proxyStatusInactive = Color(0xFF555555),
+    proxyStatusRunning = Color(0xFF007200),
+    proxyStatusError = Color(0xFFFF0000),
 )
 
 /**
