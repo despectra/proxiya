@@ -26,9 +26,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import org.koin.compose.viewmodel.koinViewModel
 import ru.despectra.proxiya.app.data.proxy.ProxyType
-import ru.despectra.proxiya.app.theme.SpecialColors
-import ru.despectra.proxiya.app.viewmodel.CreateProxyFormVo
-import ru.despectra.proxiya.app.viewmodel.CreateProxyViewModel
+import ru.despectra.proxiya.app.ui.theme.SpecialColors
+import ru.despectra.proxiya.app.ui.viewmodel.CreateProxyFormVo
+import ru.despectra.proxiya.app.ui.viewmodel.CreateProxyViewModel
 
 @Composable
 fun CreateProxyScreen(modifier: Modifier = Modifier) {

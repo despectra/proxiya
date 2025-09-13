@@ -1,6 +1,5 @@
 package ru.despectra.proxiya.app.ui.screen
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -24,7 +23,7 @@ import ru.despectra.proxiya.app.data.settings.AppSettings
 import ru.despectra.proxiya.app.data.settings.ThemeMode
 import ru.despectra.proxiya.app.ui.component.settings.SettingsCard
 import ru.despectra.proxiya.app.ui.component.settings.SettingsSwitch
-import ru.despectra.proxiya.app.viewmodel.SettingsViewModel
+import ru.despectra.proxiya.app.ui.viewmodel.SettingsViewModel
 
 @Composable
 fun SettingsScreen(

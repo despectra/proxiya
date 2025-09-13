@@ -1,4 +1,4 @@
-package ru.despectra.proxiya.app.viewmodel
+package ru.despectra.proxiya.app.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow

@@ -20,13 +20,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.koin.compose.viewmodel.koinViewModel
-import ru.despectra.proxiya.app.theme.ProxiyaTheme
 import ru.despectra.proxiya.app.ui.component.Sidebar
 import ru.despectra.proxiya.app.ui.screen.CreateProxyScreen
 import ru.despectra.proxiya.app.ui.screen.SettingsScreen
-import ru.despectra.proxiya.app.viewmodel.AppNavigationViewModel
-import ru.despectra.proxiya.app.viewmodel.MainContentPage
-import ru.despectra.proxiya.app.viewmodel.ThemeViewModel
+import ru.despectra.proxiya.app.ui.theme.ProxiyaTheme
+import ru.despectra.proxiya.app.ui.viewmodel.AppNavigationViewModel
+import ru.despectra.proxiya.app.ui.viewmodel.MainContentPage
+import ru.despectra.proxiya.app.ui.viewmodel.ThemeViewModel
 
 @Composable
 @Preview

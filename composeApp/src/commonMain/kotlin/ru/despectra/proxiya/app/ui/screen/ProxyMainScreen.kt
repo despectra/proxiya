@@ -29,11 +29,11 @@ import compose.icons.FeatherIcons
 import compose.icons.feathericons.Play
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import ru.despectra.proxiya.app.data.settings.ThemeMode
-import ru.despectra.proxiya.app.theme.ProxiyaTheme
-import ru.despectra.proxiya.app.theme.SpecialColors
+import ru.despectra.proxiya.app.ui.theme.ProxiyaTheme
+import ru.despectra.proxiya.app.ui.theme.SpecialColors
 
 @Composable
-fun ProxyMainScreen(modifier: Modifier = Modifier) {
+fun ProxyMainScreen(modifier: Modifier = Modifier, proxyId: String) {
     Column(
         modifier = modifier.fillMaxSize()
     ) {
@@ -156,6 +156,6 @@ private fun Content(modifier: Modifier = Modifier) {
 @Composable
 fun ProxyMainScreenPreview() {
     ProxiyaTheme(themeMode = ThemeMode.DARK) {
-        ProxyMainScreen()
+        ProxyMainScreen(proxyId = "1")
     }
 }

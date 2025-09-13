@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -21,10 +22,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import org.koin.compose.viewmodel.koinViewModel
-import ru.despectra.proxiya.app.viewmodel.AppNavigationViewModel
-import ru.despectra.proxiya.app.viewmodel.MainContentPage
-import ru.despectra.proxiya.app.viewmodel.ProxyItemVo
-import ru.despectra.proxiya.app.viewmodel.SidebarViewModel
+import ru.despectra.proxiya.app.ui.viewmodel.AppNavigationViewModel
+import ru.despectra.proxiya.app.ui.viewmodel.MainContentPage
+import ru.despectra.proxiya.app.ui.viewmodel.ProxyItemVo
+import ru.despectra.proxiya.app.ui.viewmodel.SidebarViewModel
 
 @Composable
 fun Sidebar(appNavViewModel: AppNavigationViewModel, modifier: Modifier = Modifier) {
@@ -105,7 +106,7 @@ private fun SidebarProxyItem(
                         ProxyItemVo.Status.ACTIVE -> Color.Green
                         ProxyItemVo.Status.ERROR -> Color.Red
                     },
-                    shape = androidx.compose.foundation.shape.CircleShape
+                    shape = CircleShape
                 )
         )
 

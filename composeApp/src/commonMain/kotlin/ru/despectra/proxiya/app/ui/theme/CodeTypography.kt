@@ -1,4 +1,4 @@
-package ru.despectra.proxiya.app.theme
+package ru.despectra.proxiya.app.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.runtime.Composable

@@ -15,11 +15,11 @@ import org.koin.dsl.onClose
 import ru.despectra.proxiya.app.data.proxy.ProxiesRepository
 import ru.despectra.proxiya.app.data.settings.AppSettingsRepository
 import ru.despectra.proxiya.app.service.ProxyControlService
-import ru.despectra.proxiya.app.viewmodel.AppNavigationViewModel
-import ru.despectra.proxiya.app.viewmodel.CreateProxyViewModel
-import ru.despectra.proxiya.app.viewmodel.SettingsViewModel
-import ru.despectra.proxiya.app.viewmodel.SidebarViewModel
-import ru.despectra.proxiya.app.viewmodel.ThemeViewModel
+import ru.despectra.proxiya.app.ui.viewmodel.AppNavigationViewModel
+import ru.despectra.proxiya.app.ui.viewmodel.CreateProxyViewModel
+import ru.despectra.proxiya.app.ui.viewmodel.SettingsViewModel
+import ru.despectra.proxiya.app.ui.viewmodel.SidebarViewModel
+import ru.despectra.proxiya.app.ui.viewmodel.ThemeViewModel
 import java.util.prefs.Preferences
 
 fun main() = application {

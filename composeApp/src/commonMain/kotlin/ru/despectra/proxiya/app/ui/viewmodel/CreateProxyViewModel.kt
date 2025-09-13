@@ -1,4 +1,4 @@
-package ru.despectra.proxiya.app.viewmodel
+package ru.despectra.proxiya.app.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import ru.despectra.proxiya.app.data.proxy.ProxiesRepository
 import ru.despectra.proxiya.app.data.proxy.ProxyType
+import java.util.logging.Level
 import java.util.logging.Logger
 
 class CreateProxyViewModel(
@@ -55,7 +56,7 @@ class CreateProxyViewModel(
                 )
             } catch (e: Exception) {
                 _submitResult.value = CreateProxyFormVo.SubmitResult.Error(e.message ?: "Unknown error")
-                logger.log(java.util.logging.Level.SEVERE, "Failed to create proxy", e)
+                logger.log(Level.SEVERE, "Failed to create proxy", e)
                 return@launch
             }
 
