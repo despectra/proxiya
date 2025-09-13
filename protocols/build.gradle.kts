@@ -21,6 +21,11 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${libs.versions.kotlinx.coroutines.get()}")
 }
 
+// Конфигурация для обработки дубликатов
+tasks.withType<Jar> {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
 // Конфигурация protobuf plugin
 protobuf {
     protoc {
