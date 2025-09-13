@@ -3,9 +3,10 @@ package ru.despectra.proxiya.controller.config.proxies
 import org.slf4j.LoggerFactory
 import ru.despectra.proxiya.controller.config.YamlConfigRepository
 import java.nio.file.Path
+import java.nio.file.Paths
 
 class RegisteredProxiesConfigRepository : YamlConfigRepository<RegisteredProxiesConfig>(
-    fileName = "registered-proxies.yaml",
+    filePath = Paths.get("registered-proxies.yaml"),
     serializer = RegisteredProxiesConfig.serializer(),
     defaultConfig = RegisteredProxiesConfig.default(),
 ) {
@@ -22,28 +23,30 @@ class RegisteredProxiesConfigRepository : YamlConfigRepository<RegisteredProxies
 
     fun loadAll(): List<ProxyConfig> {
         val registeredProxiesConfig = load() ?: return emptyList()
-        return registeredProxiesConfig.registeredProxies.mapNotNull {
-            val path = configManager.configDir.resolve(it.value)
-            configManager.loadConfig(path, ProxyConfig.serializer())
+        return registeredProxiesConfig.registeredProxies.mapNotNull { (_, proxyConfigPath) ->
+            ProxyConfigRepository(configManager.configDir.resolve(proxyConfigPath)).load()
         }
     }
 
     fun loadById(proxyId: String): ProxyConfig? {
         val registeredProxiesConfig = load() ?: return null
-        val configPath = registeredProxiesConfig.registeredProxies[proxyId]?.let {
-            // относительно рутовой директории с конфигами
-            configManager.configDir.resolve(it)
-        } ?: return null
-        return configManager.loadConfig(configPath, ProxyConfig.serializer())
+        return registeredProxiesConfig.registeredProxies[proxyId]?.let {
+            return ProxyConfigRepository(configManager.configDir.resolve(it)).load()
+        }
     }
 
     fun saveProxyConfig(config: ProxyConfig) {
-        val proxyConfigFilename = buildProxyConfigFilename(config)
-        val proxyConfigPath = proxyConfigsDir.resolve(proxyConfigFilename)
-        configManager.saveConfig(proxyConfigPath, ProxyConfig.serializer(), config)
-
         val registeredProxiesConfig = load() ?: return
         val registeredProxies = registeredProxiesConfig.registeredProxies
+        val proxyConfigPath = registeredProxies[config.id]?.let {
+            configManager.configDir.resolve(it)
+        } ?: let {
+            val newProxyConfigFilename = buildProxyConfigFilename(config)
+            proxyConfigsDir.resolve(newProxyConfigFilename)
+        }
+
+        ProxyConfigRepository(proxyConfigPath).save(config)
+
         val configRelativeDir = configManager.configDir.relativize(proxyConfigPath).toString()
         save(
             registeredProxiesConfig.copy(
