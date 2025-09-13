@@ -97,7 +97,8 @@ fun ProxiyaTheme(
     }
 
     CompositionLocalProvider(
-        LocalSpecialColors provides specialColorScheme
+        LocalSpecialColors provides specialColorScheme,
+        LocalCodeTypography provides CodeTypographyConfig
     ) {
         MaterialTheme(
             colorScheme = colorScheme,
