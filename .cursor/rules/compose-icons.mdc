@@ -1,0 +1,57 @@
+---
+description: Правила для работы с иконками в Compose Multiplatform
+globs: *.kt,*.kts
+---
+
+# Иконки в Compose Multiplatform
+
+## Проблема
+В Compose Multiplatform стандартные Material иконки не включены по умолчанию, в отличие от Android.
+
+## Решение
+Используем библиотеку [compose-icons](https://github.com/DevSrSouza/compose-icons) для доступа к популярным наборам иконок.
+
+## Доступные наборы иконок
+
+### 1. Feather Icons (рекомендуется для UI)
+```kotlin
+import compose.icons.FeatherIcons
+import compose.icons.feathericons.Play
+import compose.icons.feathericons.Square
+import compose.icons.feathericons.Settings
+
+Icon(
+    imageVector = FeatherIcons.Play,
+    contentDescription = "Play",
+    tint = MaterialTheme.colorScheme.primary
+)
+```
+
+### 2. FontAwesome Icons
+```kotlin
+import compose.icons.FontAwesomeIcons
+import compose.icons.fontawesomeicons.solid.House
+import compose.icons.fontawesomeicons.brands.Github
+```
+
+### 3. Octicons
+```kotlin
+import compose.icons.Octicons
+import compose.icons.octicons.Home
+import compose.icons.octicons.Person
+```
+
+## Зависимости
+Все наборы иконок уже добавлены в [libs.versions.toml](mdc:gradle/libs.versions.toml) и [composeApp/build.gradle.kts](mdc:composeApp/build.gradle.kts).
+
+## Правила использования
+
+1. **Всегда указывайте contentDescription** для доступности
+2. **Используйте tint** для соответствия Material Theme
+3. **Предпочитайте Feather Icons** для общего UI
+4. **FontAwesome** для брендовых иконок
+5. **Material Icons** для знакомых пользователям иконок
+6. **Octicons** для технических/разработческих иконок
+
+## Примеры
+См. [ProxyMainScreen.kt](mdc:composeApp/src/commonMain/kotlin/ru/despectra/proxiya/app/ui/screen/ProxyMainScreen.kt) для практических примеров.

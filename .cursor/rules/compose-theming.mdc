@@ -1,0 +1,146 @@
+---
+description: Тема и стили в Compose Multiplatform
+globs: composeApp/**/*.kt
+---
+
+# Тема и стили в Compose Multiplatform
+
+## Material Design 3
+Проект использует Material Design 3 через `compose.material3`.
+
+## Структура темы
+Тема определена в [composeApp/src/commonMain/kotlin/ru/despectra/proxiya/app/theme](mdc:composeApp/src/commonMain/kotlin/ru/despectra/proxiya/app/theme).
+
+## Основные принципы
+
+### 1. Цветовая схема
+```kotlin
+// Используем MaterialTheme.colorScheme
+Text(
+    text = "Hello",
+    color = MaterialTheme.colorScheme.onSurface
+)
+
+Button(
+    onClick = {},
+    colors = ButtonDefaults.buttonColors(
+        containerColor = MaterialTheme.colorScheme.primary
+    )
+) {
+    Text("Click me")
+}
+```
+
+### 2. Типографика
+```kotlin
+// Используем MaterialTheme.typography
+Text(
+    text = "Title",
+    style = MaterialTheme.typography.headlineMedium
+)
+
+Text(
+    text = "Body text",
+    style = MaterialTheme.typography.bodyMedium
+)
+```
+
+### 3. Темная/светлая тема
+```kotlin
+@Composable
+fun ProxiyaTheme(
+    themeMode: ThemeMode = ThemeMode.SYSTEM,
+    content: @Composable () -> Unit
+) {
+    val isDark = when (themeMode) {
+        ThemeMode.LIGHT -> false
+        ThemeMode.DARK -> true
+        ThemeMode.SYSTEM -> isSystemInDarkTheme()
+    }
+    
+    MaterialTheme(
+        colorScheme = if (isDark) darkColorScheme() else lightColorScheme(),
+        content = content
+    )
+}
+```
+
+## Кастомные цвета
+```kotlin
+// В теме можно определить кастомные цвета
+val ProxiyaColors = ColorScheme(
+    primary = Color(0xFF6200EE),
+    onPrimary = Color.White,
+    secondary = Color(0xFF03DAC6),
+    // ... остальные цвета
+)
+```
+
+## Компоненты с темой
+
+### 1. Кнопки
+```kotlin
+@Composable
+fun ProxiyaButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Button(
+        onClick = onClick,
+        modifier = modifier,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = MaterialTheme.colorScheme.primary
+        )
+    ) {
+        Text(text)
+    }
+}
+```
+
+### 2. Карточки
+```kotlin
+@Composable
+fun ProxiyaCard(
+    content: @Composable () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        content()
+    }
+}
+```
+
+## Правила использования
+
+1. **Всегда используйте MaterialTheme.colorScheme** вместо хардкода цветов
+2. **Применяйте MaterialTheme.typography** для текста
+3. **Используйте семантические цвета** (primary, secondary, surface, etc.)
+4. **Поддерживайте темную тему** через isSystemInDarkTheme()
+5. **Создавайте переиспользуемые компоненты** с правильной темой
+
+## Состояние темы
+```kotlin
+// Сохранение выбора темы
+enum class ThemeMode {
+    LIGHT, DARK, SYSTEM
+}
+
+// Использование в настройках
+@Composable
+fun ThemeSelector(
+    currentTheme: ThemeMode,
+    onThemeChanged: (ThemeMode) -> Unit
+) {
+    // Селектор темы
+}
+```
+
+## Примеры
+См. [ProxyMainScreen.kt](mdc:composeApp/src/commonMain/kotlin/ru/despectra/proxiya/app/ui/screen/ProxyMainScreen.kt) для примеров использования темы.

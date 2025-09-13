@@ -1,0 +1,83 @@
+---
+description: Архитектурные принципы для Compose Multiplatform в проекте Proxiya
+globs: composeApp/**/*.kt
+---
+
+# Compose Multiplatform Architecture
+
+## Структура UI модуля
+Основной UI код находится в модуле `composeApp`:
+- [composeApp/src/commonMain/kotlin](mdc:composeApp/src/commonMain/kotlin) - общий код для всех платформ
+- [composeApp/src/jvmMain/kotlin](mdc:composeApp/src/jvmMain/kotlin) - специфичный код для JVM/Desktop
+
+## Архитектурные принципы
+
+### 1. Структура пакетов
+```
+ru.despectra.proxiya.app.ui/
+├── screen/          # Экраны приложения
+├── component/       # Переиспользуемые компоненты
+├── theme/          # Тема и стили
+├── navigation/     # Навигация
+└── examples/       # Примеры использования
+```
+
+### 2. Naming Conventions
+- **Экраны**: `*Screen.kt` (например, `ProxyMainScreen.kt`)
+- **Компоненты**: `*Component.kt` или `*Button.kt`
+- **Темы**: `*Theme.kt`
+
+### 3. Material Design 3
+- Используем `MaterialTheme.colorScheme` для цветов
+- Применяем `MaterialTheme.typography` для текста
+- Следуем Material Design 3 принципам
+
+### 4. Состояние и ViewModel
+- Используем Koin для DI
+- ViewModel через `koin-compose-viewmodel`
+- Состояние через `androidx.lifecycle.viewmodelCompose`
+
+### 5. Иконки
+- Используем compose-icons библиотеку
+- Предпочитаем Feather Icons для UI
+- Всегда указываем contentDescription
+
+## Примеры структуры
+
+### Экраны
+```kotlin
+@Composable
+fun ProxyMainScreen(modifier: Modifier = Modifier) {
+    // Основной контент экрана
+}
+
+@Composable
+private fun Header(modifier: Modifier = Modifier) {
+    // Приватные компоненты экрана
+}
+```
+
+### Компоненты
+```kotlin
+@Composable
+fun ProxyCard(
+    proxy: Proxy,
+    onStopClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    // Переиспользуемый компонент
+}
+```
+
+## Зависимости
+Основные зависимости в [composeApp/build.gradle.kts](mdc:composeApp/build.gradle.kts):
+- `compose.material3` - Material Design 3
+- `compose.components.resources` - Ресурсы
+- `koin.compose` - DI для Compose
+- `compose-icons.*` - Иконки
+
+## Связь с контроллером
+UI модуль взаимодействует с контроллером через:
+- gRPC API (в jvmMain)
+- Общие протоколы из модуля `protocols`
+- ViewModel для управления состоянием
