@@ -26,6 +26,9 @@ kotlin {
             implementation(libs.koin.compose.viewmodel)
             implementation(libs.multiplatform.settings)
             implementation(libs.multiplatform.settings.no.arg)
+            implementation(libs.compose.icons.feather)
+            implementation(libs.compose.icons.fontawesome)
+            implementation(libs.compose.icons.octicons)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
