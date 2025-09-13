@@ -5,6 +5,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.Color
 import ru.despectra.proxiya.app.data.settings.ThemeMode
 
@@ -89,8 +90,18 @@ fun ProxiyaTheme(
         LightColorScheme
     }
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        content = content
-    )
+    val specialColorScheme = if (isDarkTheme) {
+        DarkSpecialColorScheme
+    } else {
+        LightSpecialColorScheme
+    }
+
+    CompositionLocalProvider(
+        LocalSpecialColors provides specialColorScheme
+    ) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            content = content
+        )
+    }
 }
