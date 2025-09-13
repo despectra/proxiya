@@ -13,7 +13,7 @@ import java.nio.file.Paths
 class YamlConfigManager {
     private val logger = LoggerFactory.getLogger(YamlConfigManager::class.java)
     private val yaml = Yaml.default
-    private val configDir: Path = getConfigDirectory()
+    val configDir: Path = getConfigDirectory()
     
     init {
         if (!Files.exists(configDir)) {
@@ -25,8 +25,8 @@ class YamlConfigManager {
     /**
      * Загружает конфигурацию из YAML файла
      */
-    fun <T> loadConfig(fileName: String, serializer: KSerializer<T>, defaultConfig: T): T {
-        val configFile = configDir.resolve(fileName)
+    fun <T> loadConfig(relativeFilePath: Path, serializer: KSerializer<T>, defaultConfig: T? = null): T? {
+        val configFile = configDir.resolve(relativeFilePath)
         
         return if (Files.exists(configFile)) {
             try {
@@ -39,19 +39,22 @@ class YamlConfigManager {
                 logger.info("Используется конфигурация по умолчанию")
                 defaultConfig
             }
-        } else {
+        } else if (defaultConfig != null) {
             logger.info("Файл конфигурации не найден: $configFile")
             logger.info("Создается конфигурация по умолчанию")
-            saveConfig(fileName, serializer, defaultConfig)
+            saveConfig(relativeFilePath, serializer, defaultConfig)
             defaultConfig
+        } else {
+            logger.info("Файл конфигурации не найден: $configFile, -> null")
+            null
         }
     }
     
     /**
      * Сохраняет конфигурацию в YAML файл
      */
-    fun <T> saveConfig(fileName: String, serializer: KSerializer<T>, config: T) {
-        val configFile = configDir.resolve(fileName)
+    fun <T> saveConfig(relativeFilePath: Path, serializer: KSerializer<T>, config: T) {
+        val configFile = configDir.resolve(relativeFilePath)
         
         try {
             val yamlContent = yaml.encodeToString(serializer, config)

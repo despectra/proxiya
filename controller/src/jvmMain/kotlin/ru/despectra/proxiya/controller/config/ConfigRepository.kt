@@ -6,10 +6,11 @@ import kotlinx.serialization.KSerializer
  * Базовый интерфейс для работы с конфигурационными файлами
  */
 interface ConfigRepository<T> {
+
     /**
      * Загружает конфигурацию из файла
      */
-    fun load(): T
+    fun load(): T?
     
     /**
      * Сохраняет конфигурацию в файл
@@ -28,11 +29,19 @@ abstract class YamlConfigRepository<T>(
     
     protected val configManager = YamlConfigManager()
     
-    override fun load(): T {
-        return configManager.loadConfig(fileName, serializer, defaultConfig)
+    override fun load(): T? {
+        return configManager.loadConfig(
+            relativeFilePath = configManager.configDir.resolve(fileName),
+            serializer = serializer,
+            defaultConfig = defaultConfig
+        )
     }
     
     override fun save(config: T) {
-        configManager.saveConfig(fileName, serializer, config)
+        configManager.saveConfig(
+            relativeFilePath = configManager.configDir.resolve(fileName),
+            serializer = serializer,
+            config = config
+        )
     }
 }

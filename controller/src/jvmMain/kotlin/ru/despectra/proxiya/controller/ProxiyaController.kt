@@ -13,6 +13,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.slf4j.LoggerFactory
+import ru.despectra.proxiya.controller.config.ConfigManagerFacade
+import ru.despectra.proxiya.controller.config.proxies.ProxyConfig
 import ru.despectra.proxiya.proto.control.ProxyControl
 import ru.despectra.proxiya.proto.control.ProxyManagementServiceOuterClass.ProxiesListState
 import java.util.concurrent.ConcurrentHashMap
@@ -32,6 +34,9 @@ class ProxiyaController(
     
     private var server: Server? = null
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+
+    // Конфиги
+    private val configsFacade = ConfigManagerFacade()
 
     // Хранилище прокси
     private val proxies = ConcurrentHashMap<String, ProxyControl.ProxyInfo>()
@@ -89,6 +94,16 @@ class ProxiyaController(
             proxiesRepository = object : ProxyManagementServiceImpl.ProxiesRepository {
                 override fun addProxy(proxyInfo: ProxyControl.ProxyInfo) {
                     this@ProxiyaController.addProxy(proxyInfo)
+                    configsFacade.registeredProxiesConfig.saveProxyConfig(
+                        ProxyConfig(
+                            id = proxyInfo.proxyId,
+                            name = proxyInfo.proxyName,
+                            type = proxyInfo.proxyType.name,
+                            port = proxyInfo.port,
+                            additionalParams = "",
+                            createdAt = proxyInfo.createdAt,
+                        )
+                    )
                 }
 
                 override fun removeProxy(proxyId: String) {
@@ -130,6 +145,9 @@ class ProxiyaController(
                 }
             },
         )
+
+        // Читаем прокси из конфигов
+        loadProxiesFromConfig()
         
         // Создаем gRPC сервер
         server = ServerBuilder.forPort(port)
@@ -164,6 +182,27 @@ class ProxiyaController(
         scope.cancel()
         
         logger.info("Proxiya Controller stopped")
+    }
+
+    private fun loadProxiesFromConfig() {
+        logger.info("Loading proxies from config...")
+        try {
+            configsFacade.registeredProxiesConfig.loadAll().map { proxyConfig ->
+                ProxyControl.ProxyInfo.newBuilder()
+                    .setProxyId(proxyConfig.id)
+                    .setProxyName(proxyConfig.name)
+                    .setProxyType(ProxyControl.ProxyType.valueOf(proxyConfig.type))
+                    .setPort(proxyConfig.port)
+                    .setStatus(ProxyControl.ProxyStatus.PROXY_STATUS_STOPPED)
+                    .setCreatedAt(proxyConfig.createdAt)
+                    .setLastUpdated(System.currentTimeMillis())
+                    .build()
+            }.let {
+                addProxies(it)
+            }
+        } catch (e: Exception) {
+            logger.error("Error loading proxies from config", e)
+        }
     }
     
     /**
@@ -283,7 +322,15 @@ class ProxiyaController(
     
     private fun addProxy(proxyInfo: ProxyControl.ProxyInfo) {
         proxies[proxyInfo.proxyId] = proxyInfo
-        logger.info("Added proxy: ${proxyInfo.proxyId}")
+        logger.info("Added proxy: ${proxyInfo.proxyId} (${proxyInfo.proxyName})")
+        notifyProxiesChanged()
+    }
+
+    private fun addProxies(proxyInfos: List<ProxyControl.ProxyInfo>) {
+        proxyInfos.forEach {
+            proxies[it.proxyId] = it
+        }
+        logger.info("Added proxies: ${proxyInfos.joinToString { "${it.proxyId} (${it.proxyName})" } }")
         notifyProxiesChanged()
     }
     
