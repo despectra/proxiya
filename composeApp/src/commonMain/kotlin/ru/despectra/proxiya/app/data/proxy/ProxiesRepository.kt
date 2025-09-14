@@ -2,6 +2,7 @@ package ru.despectra.proxiya.app.data.proxy
 
 import kotlinx.coroutines.flow.Flow
 import ru.despectra.proxiya.app.service.ProxyControlService
+import ru.despectra.proxiya.app.service.SharedProxiesStreamService
 import ru.despectra.proxiya.app.utils.generateProxyId
 import ru.despectra.proxiya.proto.control.ProxyControl
 import ru.despectra.proxiya.proto.control.ProxyManagementServiceOuterClass
@@ -10,6 +11,7 @@ import java.util.logging.Logger
 
 class ProxiesRepository(
     private val proxyControlService: ProxyControlService,
+    private val sharedProxiesStreamService: SharedProxiesStreamService,
 ) {
 
     private val logger = Logger.getLogger(ProxiesRepository::class.java.name)
@@ -67,6 +69,10 @@ class ProxiesRepository(
     }
 
     suspend fun proxiesFlow(): Flow<ProxyManagementServiceOuterClass.ProxiesListState> {
-        return proxyControlService.streamProxies()
+        return sharedProxiesStreamService.subscribeToProxies()
+    }
+    
+    suspend fun unsubscribeFromProxies() {
+        sharedProxiesStreamService.unsubscribeFromProxies()
     }
 }

@@ -15,8 +15,10 @@ import org.koin.dsl.onClose
 import ru.despectra.proxiya.app.data.proxy.ProxiesRepository
 import ru.despectra.proxiya.app.data.settings.AppSettingsRepository
 import ru.despectra.proxiya.app.service.ProxyControlService
+import ru.despectra.proxiya.app.service.SharedProxiesStreamService
 import ru.despectra.proxiya.app.ui.viewmodel.AppNavigationViewModel
 import ru.despectra.proxiya.app.ui.viewmodel.CreateProxyViewModel
+import ru.despectra.proxiya.app.ui.viewmodel.ProxyMainViewModel
 import ru.despectra.proxiya.app.ui.viewmodel.SettingsViewModel
 import ru.despectra.proxiya.app.ui.viewmodel.SidebarViewModel
 import ru.despectra.proxiya.app.ui.viewmodel.ThemeViewModel
@@ -34,6 +36,10 @@ fun main() = application {
                         initialize(host = "localhost", port = 50051)
                     }
                 } onClose { it?.close() }
+                
+                single<SharedProxiesStreamService> {
+                    SharedProxiesStreamService(proxyControlService = get())
+                } onClose { it?.close() }
             },
 
             // Repositories
@@ -41,6 +47,7 @@ fun main() = application {
                 factory<ProxiesRepository> {
                     ProxiesRepository(
                         proxyControlService = get(),
+                        sharedProxiesStreamService = get(),
                     )
                 }
 
@@ -70,6 +77,12 @@ fun main() = application {
                 }
                 viewModel<CreateProxyViewModel> {
                     CreateProxyViewModel(proxiesRepository = get())
+                }
+                viewModel<ProxyMainViewModel> { (proxyId: String) ->
+                    ProxyMainViewModel(
+                        proxyId = proxyId,
+                        proxiesRepository = get()
+                    )
                 }
             }
         )

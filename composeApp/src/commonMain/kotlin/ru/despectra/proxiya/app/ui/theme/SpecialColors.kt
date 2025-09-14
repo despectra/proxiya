@@ -28,8 +28,8 @@ val LightSpecialColorScheme = SpecialColorScheme(
     info = Color(0xFF2196F3),
 
     proxyStatusInactive = Color(0xFF4B4B4B),
-    proxyStatusRunning = Color(0xFF064006),
-    proxyStatusError = Color(0xFFFF0000),
+    proxyStatusRunning = Color(0xFF5EE25E),
+    proxyStatusError = Color(0xFFF17575),
 )
 
 /**
