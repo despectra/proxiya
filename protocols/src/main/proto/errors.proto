@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package ru.despectra.proxiya.proto.common;
+
+enum ErrorType {
+  INTERNAL_ERROR = 0;
+
+  // Порт для прокси уже занят
+  PROXY_PORT_ALREADY_IN_USE = 1;
+
+  // Недостаточно параметров прокси (при создании/обновлении)
+  PROXY_PARAMS_INCOMPLETE = 2;
+}
+
+message GenericError {
+  ErrorType type = 1;
+  string error_message = 2;
+}

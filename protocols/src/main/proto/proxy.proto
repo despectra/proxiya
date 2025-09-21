@@ -1,0 +1,73 @@
+syntax = "proto3";
+
+package ru.despectra.proxiya.proto.common;
+
+import "errors.proto";
+
+// Протки для описания прокси - параметры, экземпляры
+
+enum ProxyType {
+  HTTP = 0;
+  SOCKS5 = 1;
+  UPSTREAM = 2;
+  TRANSPARENT = 3;
+  REVERSE = 4;
+}
+
+// Параметры прокси
+message ProxyParams {
+  string name = 1;
+  ProxyType type = 2;
+  uint32 port = 3;
+  optional UpstreamProxyParams upstream_proxy_params = 4;
+  optional ReverseProxyParams reverse_proxy_params = 5;
+  optional TransparentProxyParams transparent_proxy_params = 6;
+  repeated string hosts_whitelist = 7;
+  repeated string hosts_blacklist = 8;
+  repeated string extra_cmd_params = 9;
+  bool autostart = 10;
+}
+
+message Endpoint {
+  string host = 1;
+  uint32 port = 2;
+}
+
+message UpstreamProxyParams {
+  Endpoint destination = 1;
+}
+
+message ReverseProxyParams {
+  repeated Endpoint destinations = 1;
+}
+
+message TransparentProxyParams {}
+
+// Созданный экземпляр прокси-сервера
+message ProxyInstance {
+  string proxy_id = 1;
+  ProxyParams params = 2;
+  ProxyOperationStatus operation_status = 3;
+  optional ProxyStreamingStatus streaming_status = 4;
+  uint64 created_at = 5;
+  uint64 updated_at = 6;
+  optional uint32 process_id = 7;
+}
+
+message ProxyOperationStatus {
+  ProxyOperationState state = 1;
+  optional GenericError error = 2;
+}
+
+enum ProxyOperationState {
+  IDLE = 0;
+  STARTING = 1;
+  ACTIVE = 2;
+  STOPPING = 3;
+  ERROR = 4;
+}
+
+message ProxyStreamingStatus {
+  bool is_streaming_proxy_events = 1;
+  optional GenericError error = 2;
+}

@@ -2,28 +2,39 @@ syntax = "proto3";
 
 package ru.despectra.proxiya.proto.control;
 
-import "control/proxy_control.proto";
+import "control/controller.proto";
 import "common_types.proto";
+import "proxy.proto";
 
 // Сервис для управления прокси (используется UI и внешними клиентами)
 service ProxyManagementService {
   // Создание нового прокси с заданными параметрами
-  rpc CreateProxy(ProxyConfig) returns (ProxyInfo);
+  rpc CreateProxy(
+      ru.despectra.proxiya.proto.common.ProxyParams
+  ) returns (
+      ru.despectra.proxiya.proto.common.ProxyInstance
+  );
   
   // Запуск прокси по ID
-  rpc StartProxy(StartProxyRequest) returns (ProxyInfo);
+  rpc StartProxy(StartProxyRequest) returns (
+      ru.despectra.proxiya.proto.common.OperationResult
+  );
   
   // Остановка прокси по ID
-  rpc StopProxy(StopProxyRequest) returns (ProxyInfo);
+  rpc StopProxy(StopProxyRequest) returns (
+      ru.despectra.proxiya.proto.common.OperationResult
+  );
   
   // Стриминг списка прокси (обновления в реальном времени)
-  rpc StreamProxies(StreamProxiesRequest) returns (stream ProxiesListState);
+  rpc StreamProxies(StreamProxiesRequest) returns (stream ProxiesList);
   
   // Получение общего статуса контроллера
   rpc GetControllerStatus(GetControllerStatusRequest) returns (ControllerStatus);
   
   // Удаление прокси (остановка + удаление из списка)
-  rpc DeleteProxy(DeleteProxyRequest) returns (ru.despectra.proxiya.proto.common.Empty);
+  rpc DeleteProxy(DeleteProxyRequest) returns (
+      ru.despectra.proxiya.proto.common.OperationResult
+  );
 }
 
 // Запрос на запуск прокси
@@ -37,20 +48,15 @@ message StopProxyRequest {
 }
 
 // Запрос на стриминг прокси
-message StreamProxiesRequest {
-  // Фильтр по статусу (опционально)
-  optional ProxyStatus status_filter = 1;
-}
+message StreamProxiesRequest {}
 
 // Список всех имеющихся прокси
-message ProxiesListState {
-  repeated ProxyInfo proxy_info = 1;
+message ProxiesList {
+  repeated ru.despectra.proxiya.proto.common.ProxyInstance proxy = 1;
 }
 
 // Запрос на получение статуса контроллера
-message GetControllerStatusRequest {
-  // Пустой запрос
-}
+message GetControllerStatusRequest {}
 
 // Запрос на удаление прокси
 message DeleteProxyRequest {

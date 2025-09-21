@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package ru.despectra.proxiya.proto.control;
+
+import "errors.proto";
+
+message ControllerStatus {
+  bool is_running = 1;
+  optional ru.despectra.proxiya.proto.common.GenericError error = 2;
+}

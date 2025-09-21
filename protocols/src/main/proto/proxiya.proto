@@ -4,9 +4,11 @@ package ru.despectra.proxiya.proto;
 
 // Импорт всех протоколов для удобства использования
 import "common_types.proto";
+import "errors.proto";
+import "proxy.proto";
 import "data/http_data.proto";
 import "data/proxy_data_service.proto";
-import "control/proxy_control.proto";
+import "control/controller.proto";
 import "control/proxy_management_service.proto";
 import "control/proxy_notification_service.proto";
 

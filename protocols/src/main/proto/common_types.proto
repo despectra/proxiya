@@ -2,7 +2,12 @@ syntax = "proto3";
 
 package ru.despectra.proxiya.proto.common;
 
-// Общие типы для всех сервисов Proxiya
+import "errors.proto";
 
 // Пустое сообщение для методов без возвращаемого значения
 message Empty {}
+
+message OperationResult {
+  bool success = 1;
+  optional GenericError error = 2;
+}

@@ -2,7 +2,6 @@ syntax = "proto3";
 
 package ru.despectra.proxiya.proto.control;
 
-import "control/proxy_control.proto";
 import "common_types.proto";
 
 // Сервис для уведомлений от mitmproxy аддонов
