@@ -1,36 +1,31 @@
 package ru.despectra.proxiya.controller
 
-import kotlinx.coroutines.*
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
+import ru.despectra.proxiya.controller.controller.ControllerConfig
+import ru.despectra.proxiya.controller.controller.ProxiyaController
 import kotlin.system.exitProcess
 
-/**
- * Главная точка входа для контроллера Proxiya
- */
-object MainKt {
-    private val logger = LoggerFactory.getLogger(MainKt::class.java)
-    
-    @JvmStatic
-    fun main(args: Array<String>) {
+object ProxiyaControllerApp {
+
+    private val logger = LoggerFactory.getLogger(ProxiyaControllerApp::class.java)
+
+    fun launch(args: Array<String>) {
         logger.info("Starting Proxiya Controller...")
-        
-        // Парсим аргументы командной строки
+
         val config = parseArguments(args)
-        
-        // Создаем контроллер
         val controller = ProxiyaController(
             port = config.port,
             host = config.host
         )
-        
-        // Запускаем контроллер
+
         runBlocking {
             try {
                 controller.start()
-                
-                // Ждем завершения
                 logger.info("Proxiya Controller is running. Press Ctrl+C to stop.")
-                
+
                 // Обрабатываем сигналы завершения
                 Runtime.getRuntime().addShutdownHook(Thread {
                     logger.info("Shutdown signal received, stopping controller...")
@@ -38,26 +33,26 @@ object MainKt {
                         controller.stop()
                     }
                 })
-                
+
                 // Ждем бесконечно (пока не получим сигнал завершения)
-                while (true) {
+                while (isActive) {
                     delay(1000)
                 }
-                
+
             } catch (e: Exception) {
                 logger.error("Fatal error in Proxiya Controller", e)
                 exitProcess(1)
             }
         }
     }
-    
+
     /**
      * Парсинг аргументов командной строки
      */
     private fun parseArguments(args: Array<String>): ControllerConfig {
         var port = 50051
         var host = "0.0.0.0"
-        
+
         var i = 0
         while (i < args.size) {
             when (args[i]) {
@@ -94,10 +89,10 @@ object MainKt {
             }
             i++
         }
-        
+
         return ControllerConfig(port, host)
     }
-    
+
     /**
      * Вывод справки по использованию
      */
@@ -121,12 +116,4 @@ object MainKt {
               java -jar controller.jar -p 50051 -h 0.0.0.0
         """.trimIndent())
     }
-    
-    /**
-     * Конфигурация контроллера
-     */
-    private data class ControllerConfig(
-        val port: Int,
-        val host: String
-    )
 }

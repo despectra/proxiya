@@ -17,6 +17,10 @@ kotlin {
             implementation(libs.grpc.stub)
             implementation(libs.grpc.kotlin.stub)
             implementation(libs.grpc.netty)
+
+            // DI
+            implementation(project.dependencies.platform(libs.koin.bom))
+            implementation(libs.koin.core)
             
             // Logging
             implementation("org.slf4j:slf4j-api:2.0.9")
