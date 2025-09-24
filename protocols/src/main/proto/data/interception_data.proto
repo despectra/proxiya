@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+package proxiya.data.interception;
+
+option java_package = "ru.despectra.proxiya.proto.data.interception";
+option java_multiple_files = true;
+
+import "data/http_data.proto";
+import "common_types.proto";
+import "google/protobuf/timestamp.proto";
+
+// Перехват запроса
+message InterceptedRequestNotification {
+  optional string proxy_id = 1;
+  optional string request_id = 2;
+  optional google.protobuf.Timestamp timestamp = 3;
+  // Задел на будущее для других протоколов
+  oneof request {
+  proxiya.data.http.HttpRequest http_request = 4;
+  }
+}
+
+message RequestProcessingResult {
+  optional string request_id = 1;
+  optional ProcessingKind processing_kind = 2;
+  oneof processed_request {
+    proxiya.data.http.HttpRequest http_request = 4;
+  }
+}
+
+// Перехват ответа
+message InterceptedResponseNotification {
+  optional string proxy_id = 1;
+  optional string request_id = 2;
+  optional google.protobuf.Timestamp timestamp = 3;
+  oneof response {
+    proxiya.data.http.HttpResponse http_response = 4;
+  }
+}
+
+message ResponseProcessingResult {
+  optional string request_id = 1;
+  optional ProcessingKind processing_kind = 2;
+  oneof processed_response {
+    proxiya.data.http.HttpResponse http_response = 3;
+  }
+}
+
+
+enum ProcessingKind {
+  PROCESSING_KIND_UNSPECIFIED = 0;
+
+  PROCESSING_KIND_NONE = 1;
+  PROCESSING_KIND_MODIFY = 2;
+  PROCESSING_KIND_DROP = 3;
+}

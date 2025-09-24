@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package proxiya.service.instance.data;
+
+option java_package = "ru.despectra.proxiya.proto.service.instance.data";
+option java_multiple_files = true;
+
+import "data/interception_data.proto";
+
+// Сервис для передачи перехваченных запросов и ответов от прокси-инстанса в контроллер
+service ProxyInstanceDataService {
+  // Перехват запроса - отправка в контроллер для дальнейшей обработки с ожиданием результата
+  rpc OnInterceptRequest(
+    proxiya.data.interception.InterceptedRequestNotification
+  ) returns (proxiya.data.interception.RequestProcessingResult);
+
+  // Перехват ответа - отправка в контроллер для дальнейшей обработки с ожиданием результата
+  rpc OnInterceptResponse(
+    proxiya.data.interception.InterceptedResponseNotification
+  ) returns (proxiya.data.interception.ResponseProcessingResult);
+}

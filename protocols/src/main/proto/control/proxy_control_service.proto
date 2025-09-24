@@ -1,0 +1,125 @@
+syntax = "proto3";
+
+package proxiya.service.control;
+
+option java_package = "ru.despectra.proxiya.proto.service.control";
+option java_multiple_files = true;
+
+import "common_types.proto";
+import "errors.proto";
+import "proxy.proto";
+
+// Сервис управления контроллером прокси (используется UI-приложением)
+service ProxyControlService {
+  // Создание нового прокси с заданными параметрами
+  rpc CreateProxy(CreateProxyRequest) returns (CreateProxyResult);
+
+  // Редактирование параметров прокси
+  rpc UpdateProxy(UpdateProxyRequest) returns (UpdateProxyResult);
+  
+  // Запуск прокси по ID
+  rpc StartProxy(StartProxyRequest) returns (StartProxyResult);
+  
+  // Остановка прокси по ID
+  rpc StopProxy(StopProxyRequest) returns (StopProxyResult);
+  
+  // Удаление прокси (остановка + удаление из списка)
+  rpc DeleteProxy(DeleteProxyRequest) returns (DeleteProxyResult);
+
+  // ------ СТРИМИНГ ------
+
+  // Стриминг списка прокси (обновления в реальном времени)
+  rpc StreamProxies(StreamProxiesRequest) returns (stream ProxiesList);
+  
+  // Стриминг служебных сообщений о статусе контроллера (общее состояние, например повышенная нагрузка, внутренние ошибки и т.п.)
+  rpc StreamControllerStatus(StreamControllerStatusRequest) returns (stream ControllerStatus);
+}
+
+// Создание нового прокси
+message CreateProxyRequest {
+  optional proxy.ProxyParams params = 1;
+}
+
+// Результат операции создания прокси
+message CreateProxyResult {
+  optional string proxy_id = 1;
+  optional proxiya.errors.GenericError error = 2;
+}
+
+// Редактирование параметров прокси
+message UpdateProxyRequest {
+  optional string proxy_id = 1;
+  optional proxy.ProxyParams params = 2;
+  // Нужно ли перезапускать прокси после редактирования (например, изменился тип или порт прокси и надо сразу перезапустить)
+  optional bool restart_after_update = 3;
+}
+
+// Результат редактирования параметров прокси
+message UpdateProxyResult {
+  optional proxiya.errors.GenericError error = 1;
+}
+
+// Запрос на запуск прокси
+message StartProxyRequest {
+  optional string proxy_id = 1;
+}
+
+// Результат запуска прокси
+message StartProxyResult {
+  optional int32 process_id = 1;
+  optional proxiya.errors.GenericError error = 2;
+}
+
+// Запрос на остановку прокси
+message StopProxyRequest {
+  optional string proxy_id = 1;
+}
+
+// Результат остановки прокси
+message StopProxyResult {
+  optional proxiya.errors.GenericError error = 1;
+}
+
+// Запрос на удаление прокси
+message DeleteProxyRequest {
+  optional string proxy_id = 1;
+}
+
+// Результат операции удаления прокси
+message DeleteProxyResult {
+  optional proxiya.errors.GenericError error = 1;
+}
+
+// Запрос на стриминг прокси
+message StreamProxiesRequest {}
+
+// Список всех имеющихся прокси
+message ProxiesList {
+  repeated proxy.ProxyInstance proxy_instance = 1;
+}
+
+// Запрос на стриминг служебных сообщений о статусе контроллера
+message StreamControllerStatusRequest {}
+
+// Служебное сообщение о статусе контроллера
+message ControllerStatus {
+  // Общее состояние контроллера
+  optional ControllerHealth health = 1;
+  // Количество активных соединений
+  optional int32 connections_count = 2;
+  // Количество обрабатываемых событий со всех прокси в секунду
+  optional int32 events_per_second = 3;
+  // Среднее время обработки событий
+  optional int32 avg_event_processing_latency_ms = 4;
+  // Средний объем перегоняемого трафика в секунду (байт в секунду)
+  optional int64 avg_throughput_bytes_per_second = 5;
+  // Доп. строковое сообщение
+  optional string message = 6;
+}
+
+enum ControllerHealth {
+  CONTROLLER_HEALTH_UNSPECIFIED = 0;
+  CONTROLLER_HEALTH_OK = 1;
+  CONTROLLER_HEALTH_WARNING = 2;
+  CONTROLLER_HEALTH_CRITICAL = 3;
+}

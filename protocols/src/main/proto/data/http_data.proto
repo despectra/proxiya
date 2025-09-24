@@ -1,60 +1,84 @@
 syntax = "proto3";
 
-package ru.despectra.proxiya.proto.data;
+package proxiya.data.http;
+
+option java_package = "ru.despectra.proxiya.proto.data.http";
+option java_multiple_files = true;
+
+// HTTP контент с метаданными
+message HttpContent {
+  // Тело контента
+  optional bytes body = 1;
+  
+  // Размер тела в байтах
+  optional int64 content_length = 2;
+  
+  // MIME тип контента
+  optional string content_type = 3;
+  
+  // Кодировка контента (gzip, deflate, br, etc.)
+  optional string content_encoding = 4;
+  
+  // Способ передачи (chunked, etc.)
+  optional string transfer_encoding = 5;
+}
+
+// URL и его компоненты
+message HttpUrl {
+  // Полный URL
+  optional string full_url = 1;
+  
+  // Scheme (http/https)
+  optional string scheme = 2;
+  
+  // Host
+  optional string host = 3;
+  
+  // Port
+  optional int32 port = 4;
+  
+  // Path (без query параметров)
+  optional string path = 5;
+  
+  // Query параметры
+  optional map<string, string> query_params = 6;
+  
+  // Fragment (часть после #)
+  optional string fragment = 7;
+}
 
 // HTTP запрос
 message HttpRequest {
-  // ID прокси, который перехватил запрос
-  string proxy_id = 1;
-  
   // URL запроса
-  string url = 2;
+  optional HttpUrl url = 1;
   
   // HTTP метод (GET, POST, etc.)
-  string method = 3;
+  optional string method = 2;
+  
+  // HTTP версия (1.0, 1.1, 2, 3)
+  optional string http_version = 3;
   
   // Заголовки запроса
-  map<string, string> headers = 4;
+  optional map<string, string> headers = 4;
   
-  // Тело запроса (может быть пустым)
-  bytes body = 5;
-  
-  // Время перехвата запроса (Unix timestamp в миллисекундах)
-  int64 timestamp = 6;
-  
-  // Дополнительная информация о клиенте
-  optional ClientInfo client_info = 7;
+  // Контент запроса
+  optional HttpContent content = 5;
 }
 
 // HTTP ответ
 message HttpResponse {
-  // ID прокси, который перехватил ответ
-  string proxy_id = 1;
-  
   // Статус код ответа (200, 404, etc.)
-  int32 status_code = 2;
+  optional int32 status_code = 1;
+
+  // HTTP версия (1.0, 1.1, 2, 3)
+  optional string http_version = 2;
+
+  // Причина ответа ("OK", "Not Found", etc.)
+  optional string reason_phrase = 3;
   
   // Заголовки ответа
-  map<string, string> headers = 3;
+  optional map<string, string> headers = 4;
   
-  // Тело ответа
-  bytes body = 4;
-  
-  // Время перехвата ответа (Unix timestamp в миллисекундах)
-  int64 timestamp = 5;
-  
-  // Связанный запрос (для сопоставления)
-  optional string request_id = 6;
-}
-
-// Информация о клиенте
-message ClientInfo {
-  // IP адрес клиента
-  string client_ip = 1;
-  
-  // Порт клиента
-  int32 client_port = 2;
-  
-  // User-Agent (если есть)
-  optional string user_agent = 3;
+  // Контент ответа
+  optional HttpContent content = 5;
 }

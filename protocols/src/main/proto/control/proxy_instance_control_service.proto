@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+package proxiya.service.instance.control;
+
+option java_package = "ru.despectra.proxiya.proto.service.instance.control";
+option java_multiple_files = true;
+
+import "common_types.proto";
+import "errors.proto";
+import "google/protobuf/empty.proto";
+
+// Сервис для связки контроллера с конкретным прокси (прокси-инстансом)
+service ProxyInstanceControlService {
+  // Оповещение контроллера о запуске прокси (вызывается из mitmproxy аддона)
+  rpc NotifyProxyStarted(ProxyStartedNotification) returns (google.protobuf.Empty);
+  
+  // Оповещение контроллера об остановке прокси (вызывается из mitmproxy аддона)
+  rpc NotifyProxyStopped(ProxyStoppedNotification) returns (google.protobuf.Empty);
+  
+  // Оповещение контроллера об ошибке в работе прокси
+  rpc NotifyProxyError(ProxyErrorNotification) returns (google.protobuf.Empty);
+  
+  // Периодическое уведомление контроллера о том, что прокси-сервер еще жив (heartbeat)
+  rpc Heartbeat(HeartbeatNotification) returns (google.protobuf.Empty);
+}
+
+// Оповещение о запуске прокси
+message ProxyStartedNotification {
+  optional string proxy_id = 1;
+  optional int32 process_id = 2;
+  optional proxiya.errors.GenericError error = 3;
+}
+
+// Оповещение об остановке прокси
+message ProxyStoppedNotification {
+  optional string proxy_id = 1;
+  optional int32 exit_code = 2;
+  optional proxiya.errors.GenericError error = 3;
+}
+
+// Оповещение об ошибке в работе прокси
+message ProxyErrorNotification {
+  optional string proxy_id = 1;
+  optional proxiya.errors.GenericError error = 2;
+  optional map<string, string> error_payload = 3;
+}
+
+// Heartbeat от прокси
+message HeartbeatNotification {
+  optional string proxy_id = 1;
+  optional ProxyStats stats = 2;
+}
+
+// Статистика работы прокси
+message ProxyStats {
+  // Использование памяти (в байтах)
+  optional int64 memory_usage = 1;
+}

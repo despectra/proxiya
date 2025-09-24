@@ -1,22 +1,37 @@
 syntax = "proto3";
 
-package ru.despectra.proxiya.proto.data;
+package proxiya.service.data;
 
-import "data/http_data.proto";
-import "common_types.proto";
+option java_package = "ru.despectra.proxiya.proto.service.data";
+option java_multiple_files = true;
 
-// Сервис для передачи перехваченных HTTP данных
+import "data/interception_data.proto";
+
+// Сервис для стриминга перехваченных запросов и ответов из контроллера в UI-приложение
 service ProxyDataService {
-  // Отправка перехваченного HTTP запроса в контроллер
-  rpc SendRequest(HttpRequest) returns (ru.despectra.proxiya.proto.common.Empty);
-  
-  // Отправка перехваченного HTTP ответа в контроллер
-  rpc SendResponse(HttpResponse) returns (ru.despectra.proxiya.proto.common.Empty);
-  
-  // Потоковая передача запросов (для высокой нагрузки)
-  rpc StreamRequests(stream HttpRequest) returns (ru.despectra.proxiya.proto.common.Empty);
-  
-  // Потоковая передача ответов (для высокой нагрузки)
-  rpc StreamResponses(stream HttpResponse) returns (ru.despectra.proxiya.proto.common.Empty);
+  // Стриминг перехваченных запросов из контроллера в UI-приложение
+  rpc StreamInterceptedRequests(
+    stream proxiya.data.interception.InterceptedRequestNotification
+  ) returns (stream InterceptedRequestAction);
+
+  // Стриминг перехваченных ответов из контроллера в UI-приложение
+  rpc StreamInterceptedResponses(
+    stream proxiya.data.interception.InterceptedResponseNotification
+  ) returns (stream InterceptedResponseAction);
 }
 
+message InterceptedRequestAction {
+  optional string request_id = 1;
+  optional ActionType action_type = 2;
+}
+
+message InterceptedResponseAction {
+  optional string request_id = 1;
+  optional ActionType action_type = 2;
+}
+
+enum ActionType {
+  ACTION_TYPE_UNSPECIFIED = 0;
+  ACTION_TYPE_NONE = 1;
+  ACTION_TYPE_FILTERED_OUT = 2;
+}

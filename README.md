@@ -1,28 +1,73 @@
-This is a Kotlin Multiplatform project targeting Desktop (JVM).
+# Proxiya
 
-* [/composeApp](./composeApp/src) is for code that will be shared across your Compose Multiplatform applications.
-  It contains several subfolders:
-    - [commonMain](./composeApp/src/commonMain/kotlin) is for code that’s common for all targets.
-    - Other folders are for Kotlin code that will be compiled for only the platform indicated in the folder name.
-      For example, if you want to use Apple’s CoreCrypto for the iOS part of your Kotlin app,
-      the [iosMain](./composeApp/src/iosMain/kotlin) folder would be the right place for such calls.
-      Similarly, if you want to edit the Desktop (JVM) specific part, the [jvmMain](./composeApp/src/jvmMain/kotlin)
-      folder is the appropriate location.
+Современный UI-клиент для прокси-сниффера mitmproxy. Позволяет запускать процессы mitmproxy и работать с трафиком устройств и приложений. Аналог Proxyman, Charles, Fiddler.
 
-### Build and Run Desktop (JVM) Application
+## Архитектура проекта
 
-To build and run the development version of the desktop app, use the run configuration from the run widget
-in your IDE’s toolbar or run it directly from the terminal:
+- **composeApp** - UI часть приложения (Compose Multiplatform)
+- **controller** - контроллер для управления прокси (JVM-only)
+- **protocols** - общие protobuf протоколы и gRPC API
+- **mitmproxy_addon** - Python аддон для mitmproxy
 
-- on macOS/Linux
-  ```shell
-  ./gradlew :composeApp:run
-  ```
-- on Windows
-  ```shell
-  .\gradlew.bat :composeApp:run
-  ```
+### Модули
 
----
+* [/composeApp](./composeApp/src) - UI приложение на Compose Multiplatform
+    - [commonMain](./composeApp/src/commonMain/kotlin) - общий код для всех платформ
+    - [jvmMain](./composeApp/src/jvmMain/kotlin) - JVM-специфичный код
 
-Learn more about [Kotlin Multiplatform](https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html)…
+* [/controller](./controller/src) - контроллер прокси на Kotlin
+* [/protocols](./protocols/src) - protobuf протоколы и gRPC API
+* [/mitmproxy_addon](./mitmproxy_addon/) - Python аддон для mitmproxy
+
+## Сборка и запуск
+
+### UI приложение
+
+```shell
+# macOS/Linux
+./gradlew :composeApp:run
+
+# Windows
+.\gradlew.bat :composeApp:run
+```
+
+### Контроллер
+
+```shell
+./gradlew :controller:fatJar
+java -jar controller/build/libs/proxiya-controller.jar
+```
+
+Или используйте скрипт:
+```shell
+./run-controller.sh
+```
+
+### mitmproxy аддон
+
+```shell
+cd mitmproxy_addon
+./setup_environment.sh
+source venv/bin/activate
+mitmdump -s proxiya_addon.py --set proxiya_proxy_id=test
+```
+
+## gRPC API
+
+Система использует gRPC для связи между компонентами:
+
+- **ProxyControlService** - управление прокси (UI ↔ Controller)
+- **ProxyDataService** - стриминг трафика (Controller → UI)
+- **ProxyInstanceControlService** - уведомления (mitmproxy → Controller)
+- **ProxyInstanceDataService** - передача трафика (mitmproxy → Controller)
+
+Подробнее в [protocols/README.md](./protocols/src/main/proto/README.md)
+
+## Документация
+
+- [Общее описание проекта](./docs/overview.md)
+- [Текущая работа MVP](./docs/current-work-mvp.md)
+- [Протоколы и API](./protocols/src/main/proto/README.md)
+- [Контроллер](./controller/README.md)
+- [mitmproxy аддон](./mitmproxy_addon/README.md)
+

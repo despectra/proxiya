@@ -1,18 +1,28 @@
 syntax = "proto3";
 
-package ru.despectra.proxiya.proto.common;
+package proxiya.errors;
+
+option java_package = "ru.despectra.proxiya.proto.errors";
+option java_multiple_files = true;
 
 enum ErrorType {
-  INTERNAL_ERROR = 0;
+  // default value
+  ERROR_UNSPECIFIED = 0;
+
+  // Просто какая-то неизвестная внутренняя ошибка
+  INTERNAL_ERROR = 1;
 
   // Порт для прокси уже занят
-  PROXY_PORT_ALREADY_IN_USE = 1;
+  PROXY_PORT_ALREADY_IN_USE = 2;
 
   // Недостаточно параметров прокси (при создании/обновлении)
-  PROXY_PARAMS_INCOMPLETE = 2;
+  PROXY_PARAMS_INCOMPLETE = 3;
+
+  // Прокси с таким ID не найден
+  PROXY_NOT_FOUND = 4;
 }
 
 message GenericError {
-  ErrorType type = 1;
-  string error_message = 2;
+  optional ErrorType type = 1;
+  optional string error_message = 2;
 }

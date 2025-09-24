@@ -110,17 +110,15 @@ mitmdump -s proxiya_addon.py
 
 ### Каналы связи
 
-1. **ProxyDataService** - передача перехваченных HTTP данных
-   - `SendRequest()` - отправка HTTP запроса
-   - `SendResponse()` - отправка HTTP ответа
-   - `StreamRequests()` - потоковая передача запросов
-   - `StreamResponses()` - потоковая передача ответов
+1. **ProxyInstanceDataService** - передача перехваченных HTTP данных
+   - `OnInterceptRequest(InterceptedRequestNotification) -> RequestProcessingResult` - перехват запроса с ожиданием результата обработки
+   - `OnInterceptResponse(InterceptedResponseNotification) -> ResponseProcessingResult` - перехват ответа с ожиданием результата обработки
 
-2. **ProxyNotificationService** - управление жизненным циклом
-   - `NotifyProxyStarted()` - уведомление о запуске
-   - `NotifyProxyStopped()` - уведомление об остановке
-   - `Heartbeat()` - периодические уведомления о состоянии
-   - `NotifyProxyError()` - уведомления об ошибках
+2. **ProxyInstanceControlService** - управление жизненным циклом
+   - `NotifyProxyStarted(ProxyStartedNotification) -> Empty` - уведомление о запуске
+   - `NotifyProxyStopped(ProxyStoppedNotification) -> Empty` - уведомление об остановке
+   - `NotifyProxyError(ProxyErrorNotification) -> Empty` - уведомления об ошибках
+   - `Heartbeat(HeartbeatNotification) -> Empty` - периодические heartbeat с статистикой
 
 ## Разработка
 
@@ -132,10 +130,25 @@ mitmproxy_addon/
 ├── generate_grpc_stubs.py    # Генератор gRPC стабов
 ├── requirements.txt          # Зависимости
 ├── README.md                # Документация
+├── setup_environment.sh     # Скрипт настройки окружения
+├── run_proxy.sh             # Скрипт запуска прокси
 └── generated/               # Сгенерированные gRPC стабы
     ├── __init__.py
+    ├── common_types_pb2.py
     ├── proxiya_pb2.py
-    └── proxiya_pb2_grpc.py
+    ├── proxiya_pb2_grpc.py
+    ├── control/
+    │   ├── proxy_control_pb2.py
+    │   ├── proxy_control_pb2_grpc.py
+    │   ├── proxy_instance_control_service_pb2.py
+    │   └── proxy_instance_control_service_pb2_grpc.py
+    └── data/
+        ├── http_data_pb2.py
+        ├── interception_data_pb2.py
+        ├── proxy_data_service_pb2.py
+        ├── proxy_data_service_pb2_grpc.py
+        ├── proxy_instance_data_service_pb2.py
+        └── proxy_instance_data_service_pb2_grpc.py
 ```
 
 ### Логирование

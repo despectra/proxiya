@@ -1,13 +1,18 @@
 syntax = "proto3";
 
-package ru.despectra.proxiya.proto.common;
+package proxiya.common;
+
+option java_package = "ru.despectra.proxiya.proto.common";
+option java_multiple_files = true;
 
 import "errors.proto";
 
-// Пустое сообщение для методов без возвращаемого значения
-message Empty {}
-
 message OperationResult {
-  bool success = 1;
-  optional GenericError error = 2;
+  optional bool success = 1;
+  optional proxiya.errors.GenericError error = 2;
+}
+
+message Endpoint {
+  optional string host = 1;
+  optional int32 port = 2;
 }

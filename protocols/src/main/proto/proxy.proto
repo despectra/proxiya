@@ -1,70 +1,86 @@
 syntax = "proto3";
 
-package ru.despectra.proxiya.proto.common;
+package proxiya.proxy;
+
+option java_package = "ru.despectra.proxiya.proto.proxy";
+option java_multiple_files = true;
 
 import "errors.proto";
+import "common_types.proto";
+import "google/protobuf/timestamp.proto";
 
-// Протки для описания прокси - параметры, экземпляры
+// Протки для описания прокси - параметры, созданные прокси-серверы и прочее
 
 enum ProxyType {
-  HTTP = 0;
-  SOCKS5 = 1;
-  UPSTREAM = 2;
-  TRANSPARENT = 3;
-  REVERSE = 4;
+  PROXY_TYPE_UNSPECIFIED = 0;
+  PROXY_TYPE_HTTP = 1;
+  PROXY_TYPE_SOCKS5 = 2;
+  PROXY_TYPE_UPSTREAM = 3;
+  PROXY_TYPE_TRANSPARENT = 4;
+  PROXY_TYPE_REVERSE = 5;
 }
 
 // Параметры прокси
 message ProxyParams {
-  string name = 1;
-  ProxyType type = 2;
-  uint32 port = 3;
-  optional UpstreamProxyParams upstream_proxy_params = 4;
-  optional ReverseProxyParams reverse_proxy_params = 5;
-  optional TransparentProxyParams transparent_proxy_params = 6;
-  repeated string hosts_whitelist = 7;
-  repeated string hosts_blacklist = 8;
-  repeated string extra_cmd_params = 9;
-  bool autostart = 10;
-}
+  optional string name = 1;
+  optional ProxyType type = 2;
+  optional int32 port = 3;
+  
+  // Параметры по типу прокси
+  oneof proxy_params {
+    UpstreamProxyParams upstream_proxy_params = 4;
+    ReverseProxyParams reverse_proxy_params = 5;
+    TransparentProxyParams transparent_proxy_params = 6;
+  }
 
-message Endpoint {
-  string host = 1;
-  uint32 port = 2;
+  // Дополнительные параметры
+  repeated string hosts_whitelist = 11;
+  repeated string hosts_blacklist = 12;
+  repeated string extra_cmd_params = 13;
+  optional bool autostart = 14;
 }
 
 message UpstreamProxyParams {
-  Endpoint destination = 1;
+  optional proxiya.common.Endpoint destination = 1;
 }
 
 message ReverseProxyParams {
-  repeated Endpoint destinations = 1;
+  repeated proxiya.common.Endpoint destinations = 1;
 }
 
 message TransparentProxyParams {}
 
 // Созданный экземпляр прокси-сервера
 message ProxyInstance {
-  string proxy_id = 1;
-  ProxyParams params = 2;
-  ProxyOperationStatus operation_status = 3;
+  // Уникальный идентификатор прокси-сервера
+  optional string proxy_id = 1;
+  // Параметры прокси
+  optional ProxyParams params = 2;
+  // Статус работы прокси-сервера
+  optional ProxyOperationStatus operation_status = 3;
+  // Статус стриминга событий прокси-сервера
   optional ProxyStreamingStatus streaming_status = 4;
-  uint64 created_at = 5;
-  uint64 updated_at = 6;
-  optional uint32 process_id = 7;
+  
+  // пропуск для объектов на будущее
+
+  // Таймштампы создания и обновления прокси-сервера
+  optional google.protobuf.Timestamp created_at = 10;
+  optional google.protobuf.Timestamp updated_at = 11;
 }
 
 message ProxyOperationStatus {
   ProxyOperationState state = 1;
-  optional GenericError error = 2;
+  optional int32 process_id = 2;
+  optional GenericError error = 3;
 }
 
 enum ProxyOperationState {
-  IDLE = 0;
-  STARTING = 1;
-  ACTIVE = 2;
-  STOPPING = 3;
-  ERROR = 4;
+  PROXY_STATE_UNSPECIFIED = 0;
+  PROXY_STATE_IDLE = 1;
+  PROXY_STATE_STARTING = 2;
+  PROXY_STATE_ACTIVE = 3;
+  PROXY_STATE_STOPPING = 4;
+  PROXY_STATE_ERROR = 5;
 }
 
 message ProxyStreamingStatus {

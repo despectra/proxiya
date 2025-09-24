@@ -61,9 +61,20 @@ java -jar controller/build/libs/proxiya-controller.jar --host localhost --port 8
 
 Контроллер предоставляет следующие gRPC сервисы:
 
-- **ProxyManagementService** - Управление жизненным циклом прокси
-- **ProxyDataService** - Передача перехваченных HTTP данных
-- **ProxyNotificationService** - Уведомления о событиях прокси
+### Для UI-приложения:
+- **ProxyControlService** - Управление жизненным циклом прокси (создание, запуск, остановка, удаление)
+- **ProxyDataService** - Стриминг перехваченного трафика в UI
+
+### Для mitmproxy инстансов:
+- **ProxyInstanceControlService** - Уведомления о событиях прокси (запуск, остановка, ошибки, heartbeat)
+- **ProxyInstanceDataService** - Передача перехваченных HTTP данных от прокси в контроллер
+
+## Основные компоненты
+
+- **ProxiyaController** - главный класс контроллера
+- **ProxyRepository** - управление состоянием прокси
+- **gRPC сервисы** - реализация протоколов связи
+- **Koin DI** - dependency injection контейнер
 
 ## Логирование
 
