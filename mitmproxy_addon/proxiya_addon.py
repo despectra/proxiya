@@ -401,8 +401,8 @@ class ProxiyaAddon:
         # Создаем HTTP ответ
         http_response = HttpResponse(
             status_code=flow.response.status_code,
+            reason=flow.response.reason,
             http_version=flow.response.http_version,
-            reason_phrase=flow.response.reason,
             content=http_content
         )
         

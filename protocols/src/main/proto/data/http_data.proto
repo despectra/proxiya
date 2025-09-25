@@ -70,11 +70,11 @@ message HttpResponse {
   // Статус код ответа (200, 404, etc.)
   optional int32 status_code = 1;
 
-  // HTTP версия (1.0, 1.1, 2, 3)
-  optional string http_version = 2;
-
   // Причина ответа ("OK", "Not Found", etc.)
-  optional string reason_phrase = 3;
+  optional string reason = 2;
+
+  // HTTP версия (1.0, 1.1, 2, 3)
+  optional string http_version = 3;
   
   // Заголовки ответа
   map<string, string> headers = 4;
