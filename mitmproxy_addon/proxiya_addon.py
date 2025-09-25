@@ -2,34 +2,56 @@
 """
 Proxiya mitmproxy addon
 
-Этот аддон перехватывает HTTP трафик и отправляет его в контроллер Proxiya
+Данный аддон перехватывает HTTP трафик и отправляет его в контроллер Proxiya
 через gRPC API.
+Также отправляет служебные уведомления в контроллер - о запуске, остановке, ошибках и выполняет периодические уведомления (heartbeat).
 """
 
+from __future__ import annotations
 import asyncio
-import json
 import logging
 import os
 import sys
-from typing import Optional, Dict, Any
-from datetime import datetime
+from typing import Optional
+
+# Добавляем текущую директорию в путь для импорта сгенерированных модулей
+current_dir = os.path.dirname(os.path.abspath(__file__))
+generated_dir = os.path.join(current_dir, 'generated')
+if generated_dir not in sys.path:
+    sys.path.insert(0, generated_dir)
 
 import grpc
 from mitmproxy import http, ctx
 
-# Импорты для gRPC (будут сгенерированы из proto файлов)
+GRPC_AVAILABLE = False
+# Импорты прото-биндингов
 try:
-    from proxiya_pb2 import (
-        HttpRequest, HttpResponse, ClientInfo,
-        NotifyProxyStartedRequest, NotifyProxyStoppedRequest,
-        HeartbeatRequest, ProxyStats, Empty
+    # Импорты протоколов данных
+    from data.http_data_pb2 import HttpRequest, HttpResponse, HttpUrl, HttpContent
+    from data.interception_data_pb2 import (
+        InterceptedRequestNotification, InterceptedResponseNotification,
+        RequestProcessingResult, ResponseProcessingResult
     )
-    from proxiya_pb2_grpc import (
-        ProxyDataServiceStub, ProxyNotificationServiceStub
+    
+    # Импорты протоколов управления
+    from control.proxy_instance_control_service_pb2 import (
+        ProxyStartedNotification, ProxyStoppedNotification, 
+        ProxyErrorNotification, HeartbeatNotification, ProxyStats
     )
-except ImportError:
+    
+    # Импорты gRPC сервисов
+    from data.proxy_instance_data_service_pb2_grpc import ProxyInstanceDataServiceStub
+    from control.proxy_instance_control_service_pb2_grpc import ProxyInstanceControlServiceStub
+    
+    # Дополнительные импорты
+    from google.protobuf.empty_pb2 import Empty
+    from google.protobuf.timestamp_pb2 import Timestamp
+    
+    GRPC_AVAILABLE = True
+    
+except ImportError as e:
     # Fallback для разработки - создадим заглушки
-    print("Warning: gRPC stubs not found. Using mock implementations.")
+    print(f"Warning: gRPC stubs not found ({e}). Using mock implementations.")
     
     class HttpRequest:
         def __init__(self, **kwargs):
@@ -41,22 +63,42 @@ except ImportError:
             for k, v in kwargs.items():
                 setattr(self, k, v)
     
-    class ClientInfo:
+    class HttpUrl:
         def __init__(self, **kwargs):
             for k, v in kwargs.items():
                 setattr(self, k, v)
     
-    class NotifyProxyStartedRequest:
+    class HttpContent:
         def __init__(self, **kwargs):
             for k, v in kwargs.items():
                 setattr(self, k, v)
     
-    class NotifyProxyStoppedRequest:
+    class InterceptedRequestNotification:
         def __init__(self, **kwargs):
             for k, v in kwargs.items():
                 setattr(self, k, v)
     
-    class HeartbeatRequest:
+    class InterceptedResponseNotification:
+        def __init__(self, **kwargs):
+            for k, v in kwargs.items():
+                setattr(self, k, v)
+    
+    class ProxyStartedNotification:
+        def __init__(self, **kwargs):
+            for k, v in kwargs.items():
+                setattr(self, k, v)
+    
+    class ProxyStoppedNotification:
+        def __init__(self, **kwargs):
+            for k, v in kwargs.items():
+                setattr(self, k, v)
+
+    class ProxyErrorNotification:
+        def __init__(self, **kwargs):
+            for k, v in kwargs.items():
+                setattr(self, k, v)
+    
+    class HeartbeatNotification:
         def __init__(self, **kwargs):
             for k, v in kwargs.items():
                 setattr(self, k, v)
@@ -66,20 +108,35 @@ except ImportError:
             for k, v in kwargs.items():
                 setattr(self, k, v)
     
+    class RequestProcessingResult:
+        def __init__(self, **kwargs):
+            for k, v in kwargs.items():
+                setattr(self, k, v)
+    
+    class ResponseProcessingResult:
+        def __init__(self, **kwargs):
+            for k, v in kwargs.items():
+                setattr(self, k, v)
+    
     class Empty:
         pass
     
-    class ProxyDataServiceStub:
+    class Timestamp:
+        def __init__(self, **kwargs):
+            for k, v in kwargs.items():
+                setattr(self, k, v)
+    
+    class ProxyInstanceDataServiceStub:
         def __init__(self, channel):
             pass
         
-        def SendRequest(self, request):
-            return Empty()
+        def OnInterceptRequest(self, request):
+            return RequestProcessingResult()
         
-        def SendResponse(self, request):
-            return Empty()
+        def OnInterceptResponse(self, request):
+            return ResponseProcessingResult()
     
-    class ProxyNotificationServiceStub:
+    class ProxyInstanceControlServiceStub:
         def __init__(self, channel):
             pass
         
@@ -87,6 +144,9 @@ except ImportError:
             return Empty()
         
         def NotifyProxyStopped(self, request):
+            return Empty()
+
+        def NotifyProxyError(self, request):
             return Empty()
         
         def Heartbeat(self, request):
@@ -103,20 +163,14 @@ class ProxiyaAddon:
         self.controller_host: str = "localhost"
         self.controller_port: int = 50051
         self.use_tls: bool = False
-        self.heartbeat_interval: int = 30  # секунды
+        self.heartbeat_interval: int = 2  # секунды
         
         # gRPC соединения
         self.data_channel: Optional[grpc.aio.Channel] = None
-        self.notification_channel: Optional[grpc.aio.Channel] = None
-        self.data_stub: Optional[ProxyDataServiceStub] = None
-        self.notification_stub: Optional[ProxyNotificationServiceStub] = None
-        
-        # Статистика
-        self.stats = {
-            'requests_processed': 0,
-            'responses_processed': 0,
-            'last_activity': 0
-        }
+        self.data_stub: Optional[ProxyInstanceDataServiceStub] = None
+
+        self.control_channel: Optional[grpc.aio.Channel] = None
+        self.control_stub: Optional[ProxyInstanceControlServiceStub] = None
         
         # Задачи
         self.heartbeat_task: Optional[asyncio.Task] = None
@@ -135,35 +189,7 @@ class ProxiyaAddon:
     def load(self, loader):
         """Загрузка аддона - вызывается при старте mitmproxy"""
         self.logger.info("Loading Proxiya addon...")
-        
-        # Загружаем конфигурацию из переменных окружения
         self._load_config()
-        
-        # Регистрируем команды
-        loader.add_option(
-            name="proxiya_proxy_id",
-            typespec=str,
-            default=self.proxy_id or "default",
-            help="ID прокси для идентификации в контроллере"
-        )
-        loader.add_option(
-            name="proxiya_controller_host",
-            typespec=str,
-            default=self.controller_host,
-            help="Хост контроллера Proxiya"
-        )
-        loader.add_option(
-            name="proxiya_controller_port",
-            typespec=int,
-            default=self.controller_port,
-            help="Порт контроллера Proxiya"
-        )
-        loader.add_option(
-            name="proxiya_use_tls",
-            typespec=bool,
-            default=self.use_tls,
-            help="Использовать TLS для подключения к контроллеру"
-        )
     
     def _load_config(self):
         """Загрузка конфигурации из переменных окружения"""
@@ -171,11 +197,27 @@ class ProxiyaAddon:
         self.controller_host = os.getenv('PROXIYA_CONTROLLER_HOST', 'localhost')
         self.controller_port = int(os.getenv('PROXIYA_CONTROLLER_PORT', '50051'))
         self.use_tls = os.getenv('PROXIYA_USE_TLS', 'false').lower() == 'true'
-        self.heartbeat_interval = int(os.getenv('PROXIYA_HEARTBEAT_INTERVAL', '30'))
+        self.heartbeat_interval = int(os.getenv('PROXIYA_HEARTBEAT_INTERVAL', '2'))
         
         self.logger.info(f"Configuration loaded: proxy_id={self.proxy_id}, "
                         f"controller={self.controller_host}:{self.controller_port}, "
                         f"tls={self.use_tls}")
+    
+    def running(self):
+        """Вызывается когда mitmproxy запущен"""
+        self.logger.info("Proxiya addon is running...")
+        
+        # Получаем текущий event loop
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+        
+        # Запускаем асинхронные задачи
+        loop.create_task(self._initialize_async())
+        
+        self.logger.info(f"Proxy {self.proxy_id} is initializing...")
     
     async def _connect_to_controller(self):
         """Подключение к контроллеру через gRPC"""
@@ -187,14 +229,14 @@ class ProxiyaAddon:
                 # TODO: Добавить поддержку TLS
                 credentials = grpc.ssl_channel_credentials()
                 self.data_channel = grpc.aio.secure_channel(target, credentials)
-                self.notification_channel = grpc.aio.secure_channel(target, credentials)
+                self.control_channel = grpc.aio.secure_channel(target, credentials)
             else:
                 self.data_channel = grpc.aio.insecure_channel(target)
-                self.notification_channel = grpc.aio.insecure_channel(target)
+                self.control_channel = grpc.aio.insecure_channel(target)
             
             # Создаем стабы
-            self.data_stub = ProxyDataServiceStub(self.data_channel)
-            self.notification_stub = ProxyNotificationServiceStub(self.notification_channel)
+            self.data_stub = ProxyInstanceDataServiceStub(self.data_channel)
+            self.control_stub = ProxyInstanceControlServiceStub(self.control_channel)
             
             self.logger.info(f"Connected to controller at {target}")
             return True
@@ -205,17 +247,16 @@ class ProxiyaAddon:
     
     async def _notify_proxy_started(self):
         """Уведомление контроллера о запуске прокси"""
-        if not self.notification_stub:
+        if not self.control_stub:
             return
         
         try:
-            request = NotifyProxyStartedRequest(
+            request = ProxyStartedNotification(
                 proxy_id=self.proxy_id,
-                pid=os.getpid(),
-                startup_info=f"mitmproxy addon started at {datetime.now().isoformat()}"
+                process_id=os.getpid()
             )
             
-            await self.notification_stub.NotifyProxyStarted(request)
+            await self.control_stub.NotifyProxyStarted(request)
             self.logger.info(f"Notified controller about proxy start: {self.proxy_id}")
             
         except Exception as e:
@@ -223,22 +264,20 @@ class ProxiyaAddon:
     
     async def _send_heartbeat(self):
         """Отправка heartbeat в контроллер"""
-        if not self.notification_stub:
+        if not self.control_stub:
             return
         
         try:
             stats = ProxyStats(
-                requests_processed=self.stats['requests_processed'],
-                responses_processed=self.stats['responses_processed'],
-                last_activity=self.stats['last_activity']
+                memory_usage=0  # TODO: добавить реальные метрики
             )
             
-            request = HeartbeatRequest(
+            request = HeartbeatNotification(
                 proxy_id=self.proxy_id,
                 stats=stats
             )
             
-            await self.notification_stub.Heartbeat(request)
+            await self.control_stub.Heartbeat(request)
             self.logger.debug(f"Heartbeat sent for proxy: {self.proxy_id}")
             
         except Exception as e:
@@ -256,75 +295,36 @@ class ProxiyaAddon:
                 self.logger.error(f"Heartbeat loop error: {e}")
                 await asyncio.sleep(self.heartbeat_interval)
     
-    def running(self):
-        """Вызывается когда mitmproxy запущен"""
-        self.logger.info("Proxiya addon is running...")
-        
-        # Запускаем асинхронные задачи
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        
-        # Подключаемся к контроллеру
-        loop.run_until_complete(self._connect_to_controller())
-        
-        # Уведомляем о запуске
-        loop.run_until_complete(self._notify_proxy_started())
-        
-        # Запускаем heartbeat
-        self.heartbeat_task = loop.create_task(self._heartbeat_loop())
-        
-        self.logger.info(f"Proxy {self.proxy_id} is ready to intercept traffic")
-    
-    def done(self):
-        """Вызывается при остановке mitmproxy"""
-        self.logger.info("Proxiya addon is shutting down...")
-        
-        # Останавливаем heartbeat
-        if self.heartbeat_task:
-            self.heartbeat_task.cancel()
-        
-        # Уведомляем контроллер об остановке
-        if self.notification_stub:
-            try:
-                request = NotifyProxyStoppedRequest(
-                    proxy_id=self.proxy_id,
-                    exit_code=0,
-                    reason="mitmproxy addon shutdown"
-                )
+    async def _initialize_async(self):
+        """Асинхронная инициализация аддона"""
+        try:
+            # Подключаемся к контроллеру
+            if await self._connect_to_controller():
+                # Уведомляем о запуске
+                await self._notify_proxy_started()
                 
-                loop = asyncio.get_event_loop()
-                loop.run_until_complete(
-                    self.notification_stub.NotifyProxyStopped(request)
-                )
+                # Запускаем heartbeat
+                self.heartbeat_task = asyncio.create_task(self._heartbeat_loop())
                 
-            except Exception as e:
-                self.logger.error(f"Failed to notify proxy stop: {e}")
-        
-        # Закрываем соединения
-        if self.data_channel:
-            loop = asyncio.get_event_loop()
-            loop.run_until_complete(self.data_channel.close())
-        
-        if self.notification_channel:
-            loop = asyncio.get_event_loop()
-            loop.run_until_complete(self.notification_channel.close())
-        
-        self.logger.info("Proxiya addon shutdown complete")
+                self.logger.info(f"Proxy {self.proxy_id} is ready to intercept traffic")
+            else:
+                self.logger.warning("Failed to connect to controller, working in offline mode")
+        except Exception as e:
+            self.logger.error(f"Failed to initialize async: {e}")
     
     def request(self, flow: http.HTTPFlow) -> None:
         """Обработка HTTP запроса"""
         try:
-            # Обновляем статистику
-            self.stats['requests_processed'] += 1
-            self.stats['last_activity'] = int(datetime.now().timestamp() * 1000)
-            
-            # Создаем протку запроса
-            request_data = self._create_http_request(flow)
+            # Создаем уведомление о перехваченном запросе
+            notification = self._create_intercepted_request(flow)
             
             # Отправляем в контроллер (асинхронно)
             if self.data_stub:
-                loop = asyncio.get_event_loop()
-                loop.create_task(self._send_request_async(request_data))
+                try:
+                    loop = asyncio.get_running_loop()
+                    loop.create_task(self._send_request_async(notification))
+                except RuntimeError:
+                    self.logger.warning("No event loop running, skipping request send")
             
             self.logger.debug(f"Request intercepted: {flow.request.method} {flow.request.pretty_url}")
             
@@ -334,74 +334,169 @@ class ProxiyaAddon:
     def response(self, flow: http.HTTPFlow) -> None:
         """Обработка HTTP ответа"""
         try:
-            # Обновляем статистику
-            self.stats['responses_processed'] += 1
-            self.stats['last_activity'] = int(datetime.now().timestamp() * 1000)
-            
-            # Создаем протку ответа
-            response_data = self._create_http_response(flow)
+            # Создаем уведомление о перехваченном ответе
+            notification = self._create_intercepted_response(flow)
             
             # Отправляем в контроллер (асинхронно)
             if self.data_stub:
-                loop = asyncio.get_event_loop()
-                loop.create_task(self._send_response_async(response_data))
+                try:
+                    loop = asyncio.get_running_loop()
+                    loop.create_task(self._send_response_async(notification))
+                except RuntimeError:
+                    self.logger.warning("No event loop running, skipping response send")
             
             self.logger.debug(f"Response intercepted: {flow.response.status_code} for {flow.request.pretty_url}")
             
         except Exception as e:
             self.logger.error(f"Error processing response: {e}")
     
-    def _create_http_request(self, flow: http.HTTPFlow) -> HttpRequest:
-        """Создание протки HTTP запроса"""
-        # Получаем информацию о клиенте
-        client_info = None
-        if flow.client_conn:
-            client_info = ClientInfo(
-                client_ip=flow.client_conn.address[0] if flow.client_conn.address else "unknown",
-                client_port=flow.client_conn.address[1] if flow.client_conn.address else 0,
-                user_agent=flow.request.headers.get('User-Agent')
-            )
+    def _create_intercepted_request(self, flow: http.HTTPFlow) -> InterceptedRequestNotification:
+        """Создание уведомления о перехваченном HTTP запросе"""
+        timestamp = Timestamp()
+        timestamp.GetCurrentTime()
         
-        # Создаем запрос
-        request = HttpRequest(
-            proxy_id=self.proxy_id,
-            url=flow.request.pretty_url,
+        # Создаем URL
+        http_url = HttpUrl(
+            full_url=flow.request.pretty_url,
+            scheme=flow.request.scheme,
+            host=flow.request.host,
+            port=flow.request.port,
+            path=flow.request.path
+        )
+        
+        # Создаем контент
+        http_content = self._create_http_content_from(flow.request)
+        
+        # Создаем HTTP запрос
+        http_request = HttpRequest(
+            url=http_url,
             method=flow.request.method,
-            headers=dict(flow.request.headers),
-            body=flow.request.content if flow.request.content else b'',
-            timestamp=int(datetime.now().timestamp() * 1000),
-            client_info=client_info
+            http_version=flow.request.http_version,
+            content=http_content
         )
         
-        return request
-    
-    def _create_http_response(self, flow: http.HTTPFlow) -> HttpResponse:
-        """Создание протки HTTP ответа"""
-        response = HttpResponse(
+        # Добавляем заголовки
+        for key, value in flow.request.headers.items():
+            http_request.headers[key] = value
+        
+        request_id = flow.id
+        # Создаем уведомление
+        notification = InterceptedRequestNotification(
             proxy_id=self.proxy_id,
-            status_code=flow.response.status_code,
-            headers=dict(flow.response.headers),
-            body=flow.response.content if flow.response.content else b'',
-            timestamp=int(datetime.now().timestamp() * 1000),
-            request_id=None  # TODO: Добавить связывание с запросом
+            request_id=request_id,
+            timestamp=timestamp,
+            http_request=http_request
         )
         
-        return response
+        return notification
     
-    async def _send_request_async(self, request: HttpRequest):
-        """Асинхронная отправка запроса в контроллер"""
+    def _create_intercepted_response(self, flow: http.HTTPFlow) -> InterceptedResponseNotification:
+        """Создание уведомления о перехваченном HTTP ответе"""
+        timestamp = Timestamp()
+        timestamp.GetCurrentTime()
+        
+        # Создаем контент
+        http_content = self._create_http_content_from(flow.response)
+        
+        # Создаем HTTP ответ
+        http_response = HttpResponse(
+            status_code=flow.response.status_code,
+            http_version=flow.response.http_version,
+            reason_phrase=flow.response.reason,
+            content=http_content
+        )
+        
+        # Добавляем заголовки
+        for key, value in flow.response.headers.items():
+            http_response.headers[key] = value
+        
+        # Создаем уведомление
+        notification = InterceptedResponseNotification(
+            proxy_id=self.proxy_id,
+            request_id=flow.id,
+            timestamp=timestamp,
+            http_response=http_response
+        )
+        
+        return notification
+
+    def _create_http_content_from(self, source: http.Request | http.Response) -> HttpContent:
+        """Создание объекта HttpContent из mitmproxy flow Request или Response"""
+        http_content = HttpContent()
+        if source.content:
+            http_content.body = source.content
+        if 'content-type' in source.headers:
+            http_content.content_type = source.headers['content-type']
+        if 'content-length' in source.headers:
+            try:
+                http_content.content_length = int(source.headers['content-length'])
+            except ValueError:
+                pass
+        return http_content
+    
+    async def _send_request_async(self, notification: InterceptedRequestNotification):
+        """Асинхронная отправка перехваченного запроса в контроллер"""
         try:
-            await self.data_stub.SendRequest(request)
+            result = await self.data_stub.OnInterceptRequest(notification)
+            self.logger.debug(f"Request processing result: {result}")
+            # TODO: Обработать результат (например, модификация запроса)
         except Exception as e:
             self.logger.error(f"Failed to send request to controller: {e}")
     
-    async def _send_response_async(self, response: HttpResponse):
-        """Асинхронная отправка ответа в контроллер"""
+    async def _send_response_async(self, notification: InterceptedResponseNotification):
+        """Асинхронная отправка перехваченного ответа в контроллер"""
         try:
-            await self.data_stub.SendResponse(response)
+            result = await self.data_stub.OnInterceptResponse(notification)
+            self.logger.debug(f"Response processing result: {result}")
+            # TODO: Обработать результат (например, модификация ответа)
         except Exception as e:
             self.logger.error(f"Failed to send response to controller: {e}")
 
+    def done(self):
+        """Вызывается при остановке mitmproxy"""
+        self.logger.info("Proxiya addon is shutting down...")
+        
+        # Останавливаем heartbeat
+        if self.heartbeat_task:
+            self.heartbeat_task.cancel()
+        
+        # Запускаем асинхронное завершение
+        try:
+            loop = asyncio.get_running_loop()
+            loop.create_task(self._shutdown_async())
+        except RuntimeError:
+            self.logger.warning("No event loop running during shutdown")
+        
+        self.logger.info("Proxiya addon shutdown initiated")
+    
+    async def _shutdown_async(self):
+        """Асинхронное завершение работы аддона"""
+        try:
+            # Уведомляем контроллер об остановке
+            if self.control_stub:
+                try:
+                    request = ProxyStoppedNotification(
+                        proxy_id=self.proxy_id,
+                        exit_code=0
+                    )
+                    
+                    await self.control_stub.NotifyProxyStopped(request)
+                    self.logger.info("Notified controller about proxy stop")
+                    
+                except Exception as e:
+                    self.logger.error(f"Failed to notify proxy stop: {e}")
+            
+            # Закрываем соединения
+            if self.data_channel:
+                await self.data_channel.close()
+            
+            if self.control_channel:
+                await self.control_channel.close()
+            
+            self.logger.info("Proxiya addon shutdown complete")
+            
+        except Exception as e:
+            self.logger.error(f"Error during async shutdown: {e}")
 
 # Создаем экземпляр аддона
 addons = [ProxiyaAddon()]

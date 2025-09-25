@@ -3,7 +3,6 @@
 Скрипт для генерации Python gRPC стабов из proto файлов
 """
 
-import os
 import subprocess
 import sys
 from pathlib import Path
