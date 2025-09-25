@@ -42,7 +42,7 @@ message ProxyStoppedNotification {
 message ProxyErrorNotification {
   optional string proxy_id = 1;
   optional proxiya.errors.GenericError error = 2;
-  optional map<string, string> error_payload = 3;
+  map<string, string> error_payload = 3;
 }
 
 // Heartbeat от прокси

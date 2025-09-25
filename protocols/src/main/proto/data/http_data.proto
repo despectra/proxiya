@@ -41,7 +41,7 @@ message HttpUrl {
   optional string path = 5;
   
   // Query параметры
-  optional map<string, string> query_params = 6;
+  map<string, string> query_params = 6;
   
   // Fragment (часть после #)
   optional string fragment = 7;
@@ -59,7 +59,7 @@ message HttpRequest {
   optional string http_version = 3;
   
   // Заголовки запроса
-  optional map<string, string> headers = 4;
+  map<string, string> headers = 4;
   
   // Контент запроса
   optional HttpContent content = 5;
@@ -77,7 +77,7 @@ message HttpResponse {
   optional string reason_phrase = 3;
   
   // Заголовки ответа
-  optional map<string, string> headers = 4;
+  map<string, string> headers = 4;
   
   // Контент ответа
   optional HttpContent content = 5;

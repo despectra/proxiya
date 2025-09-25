@@ -71,7 +71,7 @@ message ProxyInstance {
 message ProxyOperationStatus {
   ProxyOperationState state = 1;
   optional int32 process_id = 2;
-  optional GenericError error = 3;
+  optional proxiya.errors.GenericError error = 3;
 }
 
 enum ProxyOperationState {
@@ -85,5 +85,5 @@ enum ProxyOperationState {
 
 message ProxyStreamingStatus {
   bool is_streaming_proxy_events = 1;
-  optional GenericError error = 2;
+  optional proxiya.errors.GenericError error = 2;
 }

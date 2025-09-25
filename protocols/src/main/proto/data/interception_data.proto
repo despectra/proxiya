@@ -16,7 +16,7 @@ message InterceptedRequestNotification {
   optional google.protobuf.Timestamp timestamp = 3;
   // Задел на будущее для других протоколов
   oneof request {
-  proxiya.data.http.HttpRequest http_request = 4;
+    proxiya.data.http.HttpRequest http_request = 4;
   }
 }
 
