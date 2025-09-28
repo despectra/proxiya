@@ -8,30 +8,15 @@ option java_multiple_files = true;
 import "data/interception_data.proto";
 
 // Сервис для стриминга перехваченных запросов и ответов из контроллера в UI-приложение
+// Данный сервис вызывается из UI-приложения
 service ProxyDataService {
   // Стриминг перехваченных запросов из контроллера в UI-приложение
   rpc StreamInterceptedRequests(
-    stream proxiya.data.interception.InterceptedRequestNotification
-  ) returns (stream InterceptedRequestAction);
+    stream proxiya.data.interception.RequestProcessingResult
+  ) returns (stream proxiya.data.interception.InterceptedRequestNotification);
 
   // Стриминг перехваченных ответов из контроллера в UI-приложение
   rpc StreamInterceptedResponses(
-    stream proxiya.data.interception.InterceptedResponseNotification
-  ) returns (stream InterceptedResponseAction);
-}
-
-message InterceptedRequestAction {
-  optional string request_id = 1;
-  optional ActionType action_type = 2;
-}
-
-message InterceptedResponseAction {
-  optional string request_id = 1;
-  optional ActionType action_type = 2;
-}
-
-enum ActionType {
-  ACTION_TYPE_UNSPECIFIED = 0;
-  ACTION_TYPE_NONE = 1;
-  ACTION_TYPE_FILTERED_OUT = 2;
+    stream proxiya.data.interception.ResponseProcessingResult
+  ) returns (stream proxiya.data.interception.InterceptedResponseNotification);
 }

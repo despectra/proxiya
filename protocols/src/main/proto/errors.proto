@@ -18,8 +18,17 @@ enum ErrorType {
   // Недостаточно параметров прокси (при создании/обновлении)
   PROXY_PARAMS_INCOMPLETE = 3;
 
+  // Неверные параметры прокси (при создании/обновлении)
+  PROXY_PARAMS_INVALID = 4;
+
   // Прокси с таким ID не найден
-  PROXY_NOT_FOUND = 4;
+  PROXY_NOT_FOUND = 5;
+
+  // Не удалось запустить прокси
+  PROXY_STARTUP_FAILURE = 6;
+
+  // Не удалось остановить прокси
+  PROXY_SHUTDOWN_FAILURE = 7;
 }
 
 message GenericError {

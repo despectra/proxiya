@@ -8,6 +8,7 @@ option java_multiple_files = true;
 import "data/interception_data.proto";
 
 // Сервис для передачи перехваченных запросов и ответов от прокси-инстанса в контроллер
+// Данный сервис вызывается из mitmproxy-аддона
 service ProxyInstanceDataService {
   // Перехват запроса - отправка в контроллер для дальнейшей обработки с ожиданием результата
   rpc OnInterceptRequest(
