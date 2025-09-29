@@ -56,10 +56,10 @@ message ProxyInstance {
   optional string proxy_id = 1;
   // Параметры прокси
   optional ProxyParams params = 2;
-  // Статус работы прокси-сервера
-  optional ProxyOperationStatus operation_status = 3;
-  // Статус стриминга событий прокси-сервера
-  optional ProxyStreamingStatus streaming_status = 4;
+  // Статус процесса mitmproxy
+  optional ProcessStatus process_status = 3;
+  // Статус функциональности прокси
+  optional ProxyFunctionalityStatus functionality_status = 4;
   
   // пропуск для объектов на будущее
 
@@ -68,23 +68,38 @@ message ProxyInstance {
   optional google.protobuf.Timestamp updated_at = 11;
 }
 
-message ProxyOperationStatus {
-  optional ProxyOperationState state = 1;
+// Статус процесса mitmproxy
+message ProcessStatus {
+  // Состояние процесса
+  optional ProcessState state = 1;
+  // PID процесса (если запущен)
   optional int32 process_id = 2;
+  // Ошибка процесса (если есть)
   optional proxiya.errors.GenericError error = 3;
 }
 
-enum ProxyOperationState {
-  PROXY_STATE_UNSPECIFIED = 0;
-  PROXY_STATE_IDLE = 1;
-  PROXY_STATE_PROCESS_STARTING = 2;
-  PROXY_STATE_PROCESS_RUNNING = 3;
-  PROXY_STATE_PROXY_ACTIVE = 4;
-  PROXY_STATE_PROCESS_STOPPING = 5;
-  PROXY_STATE_ERROR = 6;
+// Статус функциональности прокси
+message ProxyFunctionalityStatus {
+  // Общее состояние прокси
+  optional ProxyState state = 1;
+  // Включен ли стриминг событий
+  optional bool streaming_enabled = 2;
+  // Ошибки функциональности
+  optional proxiya.errors.GenericError error = 8;
 }
 
-message ProxyStreamingStatus {
-  optional bool is_streaming_proxy_events = 1;
-  optional proxiya.errors.GenericError error = 2;
+enum ProcessState {
+  PROCESS_STATE_UNSPECIFIED = 0;
+  PROCESS_STATE_STOPPED = 1;
+  PROCESS_STATE_STARTING = 2;
+  PROCESS_STATE_RUNNING = 3;
+  PROCESS_STATE_STOPPING = 4;
+  PROCESS_STATE_ERROR = 5;
+}
+
+enum ProxyState {
+  PROXY_STATE_UNSPECIFIED = 0;
+  PROXY_STATE_STOPPED = 1;
+  PROXY_STATE_ACTIVE = 2;
+  PROXY_STATE_ERROR = 3;
 }

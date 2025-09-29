@@ -9,7 +9,7 @@ import kotlinx.coroutines.channels.produce
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
-import ru.despectra.proxiya.proto.proxy.ProxyOperationState
+import ru.despectra.proxiya.proto.proxy.ProcessState
 import ru.despectra.proxiya.proto.proxy.ProxyParams
 import ru.despectra.proxiya.proto.proxy.ProxyType
 import java.io.File
@@ -184,16 +184,16 @@ class MitmproxyProcessManager : AutoCloseable {
         }
     }
 
-    sealed class StartupStatus(val state: ProxyOperationState) {
-        data object Starting : StartupStatus(ProxyOperationState.PROXY_STATE_PROCESS_STARTING)
-        data class Started(val processId: ProcessId) : StartupStatus(ProxyOperationState.PROXY_STATE_PROCESS_RUNNING)
-        data class Failed(val errorMessage: String) : StartupStatus(ProxyOperationState.PROXY_STATE_ERROR)
+    sealed class StartupStatus(val state: ProcessState) {
+        data object Starting : StartupStatus(ProcessState.PROCESS_STATE_STARTING)
+        data class Started(val processId: ProcessId) : StartupStatus(ProcessState.PROCESS_STATE_RUNNING)
+        data class Failed(val errorMessage: String) : StartupStatus(ProcessState.PROCESS_STATE_ERROR)
     }
 
-    sealed class ShutdownStatus(val state: ProxyOperationState) {
-        data object Stopping : ShutdownStatus(ProxyOperationState.PROXY_STATE_PROCESS_STOPPING)
-        data object Stopped : ShutdownStatus(ProxyOperationState.PROXY_STATE_IDLE)
-        data class Failed(val errorMessage: String) : ShutdownStatus(ProxyOperationState.PROXY_STATE_ERROR)
+    sealed class ShutdownStatus(val state: ProcessState) {
+        data object Stopping : ShutdownStatus(ProcessState.PROCESS_STATE_STOPPING)
+        data object Stopped : ShutdownStatus(ProcessState.PROCESS_STATE_STOPPED)
+        data class Failed(val errorMessage: String) : ShutdownStatus(ProcessState.PROCESS_STATE_ERROR)
     }
 
     private data class ProcessDescriptor(

@@ -14,16 +14,17 @@ import ru.despectra.proxiya.controller.utils.makeGenericError
 import ru.despectra.proxiya.controller.utils.makeGenericErrorAsException
 import ru.despectra.proxiya.proto.errors.ErrorType
 import ru.despectra.proxiya.proto.errors.GenericError
+import ru.despectra.proxiya.proto.proxy.ProcessState
 import ru.despectra.proxiya.proto.proxy.ProxyInstance
 import ru.despectra.proxiya.proto.proxy.ProxyInstanceKt
-import ru.despectra.proxiya.proto.proxy.ProxyOperationState
 import ru.despectra.proxiya.proto.proxy.ProxyParams
+import ru.despectra.proxiya.proto.proxy.ProxyState
 import ru.despectra.proxiya.proto.proxy.ProxyType
 import ru.despectra.proxiya.proto.proxy.copy
-import ru.despectra.proxiya.proto.proxy.operationStatusOrNull
+import ru.despectra.proxiya.proto.proxy.processStatus
+import ru.despectra.proxiya.proto.proxy.processStatusOrNull
+import ru.despectra.proxiya.proto.proxy.proxyFunctionalityStatus
 import ru.despectra.proxiya.proto.proxy.proxyInstance
-import ru.despectra.proxiya.proto.proxy.proxyOperationStatus
-import ru.despectra.proxiya.proto.proxy.proxyStreamingStatus
 import ru.despectra.proxiya.proto.proxy.reverseProxyParamsOrNull
 import ru.despectra.proxiya.proto.proxy.transparentProxyParamsOrNull
 import ru.despectra.proxiya.proto.proxy.upstreamProxyParamsOrNull
@@ -61,11 +62,11 @@ class ProxyRepository(
                 val proxyInstance = proxyInstance {
                     this.proxyId = proxyId
                     this.params = proxyParams
-                    this.operationStatus = proxyOperationStatus {
-                        state = ProxyOperationState.PROXY_STATE_IDLE
+                    this.processStatus = processStatus {
+                        state = ProcessState.PROCESS_STATE_STOPPED
                     }
-                    this.streamingStatus = proxyStreamingStatus {
-                        isStreamingProxyEvents = false
+                    this.functionalityStatus = proxyFunctionalityStatus {
+                        state = ProxyState.PROXY_STATE_STOPPED
                     }
                     val now = Instant.now()
                     this.createdAt = now.asProtoTimestamp()
@@ -114,8 +115,8 @@ class ProxyRepository(
         return scope.async {
             runCatching {
                 val proxyInstance = tryFindProxyInstance(proxyId)
-                if (proxyInstance.operationStatusOrNull?.hasProcessId() == true) {
-                    return@runCatching proxyInstance.operationStatus.processId
+                if (proxyInstance.processStatusOrNull?.hasProcessId() == true) {
+                    return@runCatching proxyInstance.processStatus.processId
                 }
                 val statusChannel = mitmproxyProcessManager.startProxyProcess(proxyId, proxyInstance.params)
                 var processId: ProcessId? = null
@@ -137,7 +138,7 @@ class ProxyRepository(
                         }
                     }
                     updateSingleProxy(proxyId) {
-                        operationStatus = proxyOperationStatus {
+                        processStatus = processStatus {
                             this.state = updatedState
                             processId?.let { this.processId = it } ?: this.clearProcessId()
                             error?.let { this.error = it } ?: this.clearError()
@@ -157,7 +158,7 @@ class ProxyRepository(
         return scope.async {
             runCatching {
                 val proxyInstance = tryFindProxyInstance(proxyId)
-                if (proxyInstance.operationStatusOrNull?.hasProcessId() == false) {
+                if (proxyInstance.processStatusOrNull?.hasProcessId() == false) {
                     return@runCatching
                 }
 
@@ -176,7 +177,7 @@ class ProxyRepository(
                         }
                     }
                     updateSingleProxy(proxyId) {
-                        operationStatus = proxyOperationStatus {
+                        processStatus = processStatus {
                             this.state = status.state
                             this.clearProcessId()
                             error?.let { this.error = it } ?: this.clearError()
