@@ -1,5 +1,8 @@
 package ru.despectra.proxiya.controller.config.proxies
 
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.get
+import org.koin.core.parameter.parametersOf
 import org.slf4j.LoggerFactory
 import ru.despectra.proxiya.controller.config.YamlConfigRepository
 import java.nio.file.Path
@@ -9,7 +12,7 @@ class RegisteredProxiesConfigRepository : YamlConfigRepository<RegisteredProxies
     filePath = Paths.get("registered-proxies.yaml"),
     serializer = RegisteredProxiesConfig.serializer(),
     defaultConfig = RegisteredProxiesConfig.default(),
-) {
+), KoinComponent {
     private val logger = LoggerFactory.getLogger(RegisteredProxiesConfigRepository::class.java)
     private val proxyConfigsDir: Path = configManager.configDir.resolve("proxies")
 
@@ -24,14 +27,16 @@ class RegisteredProxiesConfigRepository : YamlConfigRepository<RegisteredProxies
     fun loadAll(): List<ProxyConfig> {
         val registeredProxiesConfig = load() ?: return emptyList()
         return registeredProxiesConfig.registeredProxies.mapNotNull { (_, proxyConfigPath) ->
-            ProxyConfigRepository(configManager.configDir.resolve(proxyConfigPath)).load()
+            val configPath = configManager.configDir.resolve(proxyConfigPath)
+            get<ProxyConfigRepository> { parametersOf(configPath) }.load()
         }
     }
 
     fun loadById(proxyId: String): ProxyConfig? {
         val registeredProxiesConfig = load() ?: return null
         return registeredProxiesConfig.registeredProxies[proxyId]?.let {
-            return ProxyConfigRepository(configManager.configDir.resolve(it)).load()
+            val configPath = configManager.configDir.resolve(it)
+            return get<ProxyConfigRepository> { parametersOf(configPath) }.load()
         }
     }
 
@@ -45,7 +50,7 @@ class RegisteredProxiesConfigRepository : YamlConfigRepository<RegisteredProxies
             proxyConfigsDir.resolve(newProxyConfigFilename)
         }
 
-        ProxyConfigRepository(proxyConfigPath).save(config)
+        get<ProxyConfigRepository> { parametersOf(proxyConfigPath) }.save(config)
 
         val configRelativeDir = configManager.configDir.relativize(proxyConfigPath).toString()
         save(
