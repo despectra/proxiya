@@ -1,12 +1,7 @@
 package ru.despectra.proxiya.controller.repository
 
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import org.slf4j.LoggerFactory
+import ru.despectra.proxiya.controller.store.ProxyStore
 import ru.despectra.proxiya.controller.utils.asException
 import ru.despectra.proxiya.controller.utils.asProtoTimestamp
 import ru.despectra.proxiya.controller.utils.generateProxyId
@@ -15,19 +10,13 @@ import ru.despectra.proxiya.controller.utils.makeGenericErrorAsException
 import ru.despectra.proxiya.proto.errors.ErrorType
 import ru.despectra.proxiya.proto.errors.GenericError
 import ru.despectra.proxiya.proto.proxy.ProcessState
-import ru.despectra.proxiya.proto.proxy.ProxyInstance
-import ru.despectra.proxiya.proto.proxy.ProxyInstanceKt
 import ru.despectra.proxiya.proto.proxy.ProxyParams
 import ru.despectra.proxiya.proto.proxy.ProxyState
-import ru.despectra.proxiya.proto.proxy.ProxyType
 import ru.despectra.proxiya.proto.proxy.copy
 import ru.despectra.proxiya.proto.proxy.processStatus
 import ru.despectra.proxiya.proto.proxy.processStatusOrNull
 import ru.despectra.proxiya.proto.proxy.proxyFunctionalityStatus
 import ru.despectra.proxiya.proto.proxy.proxyInstance
-import ru.despectra.proxiya.proto.proxy.reverseProxyParamsOrNull
-import ru.despectra.proxiya.proto.proxy.transparentProxyParamsOrNull
-import ru.despectra.proxiya.proto.proxy.upstreamProxyParamsOrNull
 import java.lang.AutoCloseable
 import java.time.Instant
 
@@ -45,99 +34,106 @@ typealias ProcessId = Int
  */
 class ProxyRepository(
     private val mitmproxyProcessManager: MitmproxyProcessManager,
+    private val proxyStore: ProxyStore,
+    private val proxyParamsValidator: ProxyParamsValidator,
 ) : AutoCloseable {
 
-    private val _proxiesFlow = MutableStateFlow<List<ProxyInstance>>(emptyList())
-    val proxiesFlow = _proxiesFlow.asStateFlow()
+    val proxiesFlow = proxyStore.proxiesListFlow
 
     private val logger = LoggerFactory.getLogger(ProxyRepository::class.java)
-    private val scope = CoroutineScope(Dispatchers.IO)
 
     suspend fun createProxy(proxyParams: ProxyParams): Result<ProxyId> {
-        return scope.async {
-            runCatching {
-                logger.debug("Creating proxy with id:")
-                validateProxyParams(proxyParams).getOrThrow()
-                val proxyId = generateProxyId(proxyParams)
-                val proxyInstance = proxyInstance {
-                    this.proxyId = proxyId
-                    this.params = proxyParams
-                    this.processStatus = processStatus {
-                        state = ProcessState.PROCESS_STATE_STOPPED
-                    }
-                    this.functionalityStatus = proxyFunctionalityStatus {
-                        state = ProxyState.PROXY_STATE_STOPPED
-                    }
-                    val now = Instant.now()
-                    this.createdAt = now.asProtoTimestamp()
-                    this.updatedAt = now.asProtoTimestamp()
+        return runCatching {
+            logger.debug("Creating proxy")
+            proxyParamsValidator.validate(proxyParams).getOrThrow()
+            val proxyId = generateProxyId(proxyParams)
+            logger.debug("new proxy id: $proxyId")
+            val proxyInstance = proxyInstance {
+                this.proxyId = proxyId
+                this.params = proxyParams
+                this.processStatus = processStatus {
+                    state = ProcessState.PROCESS_STATE_STOPPED
                 }
-                _proxiesFlow.update { it + proxyInstance }
-                logger.debug("Created proxy with id: $proxyId")
-
-                if (proxyParams.autostart) {
-                    logger.debug("Automatically starting proxy: $proxyId")
-                    startProxy(proxyId)
+                this.functionalityStatus = proxyFunctionalityStatus {
+                    state = ProxyState.PROXY_STATE_STOPPED
                 }
-                proxyId
+                val now = Instant.now()
+                this.createdAt = now.asProtoTimestamp()
+                this.updatedAt = now.asProtoTimestamp()
             }
-        }.await()
+            proxyStore.saveProxy(proxyInstance)
+            logger.debug("Created proxy with id: $proxyId")
+
+            if (proxyParams.autostart) {
+                logger.debug("Autostarting proxy with id: $proxyId")
+                startProxy(proxyId)
+            }
+            proxyId
+        }
     }
 
     suspend fun updateProxy(proxyId: ProxyId, updatedParams: ProxyParams): Result<Unit> {
-        return scope.async {
-            runCatching {
-                val proxyInstance = tryFindProxyInstance(proxyId)
-                validateProxyParams(updatedParams).getOrThrow()
-
-                val updatedProxyInstance = proxyInstance.copy {
+        return runCatching {
+            logger.debug("Updating proxy with id: $proxyId")
+            proxyParamsValidator.validate(updatedParams).getOrThrow()
+            proxyStore.updateProxy(proxyId) {
+                copy {
                     this.params = updatedParams
                     this.updatedAt = Instant.now().asProtoTimestamp()
                 }
-                _proxiesFlow.update { proxies ->
-                    proxies.filterNot { it.proxyId == proxyId } + updatedProxyInstance
-                }
             }
-        }.await()
+            logger.debug("Updated proxy with id: $proxyId")
+        }
     }
 
     suspend fun removeProxy(proxyId: ProxyId): Result<Unit> {
-        return scope.async {
-            runCatching {
-                val proxyInstance = tryFindProxyInstance(proxyId)
-                stopProxy(proxyId)
-                _proxiesFlow.update { it - proxyInstance }
-            }
-        }.await()
+        return runCatching {
+            logger.debug("Removing proxy with id: $proxyId")
+
+            stopProxy(proxyId)
+            proxyStore.removeProxy(proxyId)
+
+            logger.debug("Removed proxy with id: $proxyId")
+        }
     }
 
     suspend fun startProxy(proxyId: ProxyId): Result<ProcessId> {
-        return scope.async {
-            runCatching {
-                val proxyInstance = tryFindProxyInstance(proxyId)
-                if (proxyInstance.processStatusOrNull?.hasProcessId() == true) {
-                    return@runCatching proxyInstance.processStatus.processId
-                }
-                val statusChannel = mitmproxyProcessManager.startProxyProcess(proxyId, proxyInstance.params)
-                var processId: ProcessId? = null
-                var error: GenericError? = null
-                for (status in statusChannel) {
-                    val updatedState = status.state
-                    when (status) {
-                        is MitmproxyProcessManager.StartupStatus.Starting -> {
-                            processId = null
-                            error = null
-                        }
-                        is MitmproxyProcessManager.StartupStatus.Started -> {
-                            processId = status.processId
-                            error = null
-                        }
-                        is MitmproxyProcessManager.StartupStatus.Failed -> {
-                            processId = null
-                            error = makeGenericError(ErrorType.PROXY_STARTUP_FAILURE, status.errorMessage)
-                        }
+        return runCatching {
+            logger.debug("Starting proxy with id: $proxyId")
+            val proxyInstance = proxyStore.getProxy(proxyId)
+                ?: throw makeGenericErrorAsException(
+                    type = ErrorType.PROXY_NOT_FOUND,
+                    message = "Proxy $proxyId not found"
+                )
+
+            if (proxyInstance.processStatusOrNull?.hasProcessId() == true) {
+                val pid = proxyInstance.processStatus.processId
+                logger.debug("Proxy with id: $proxyId already started in process $pid")
+                return@runCatching pid
+            }
+            val startupStatusChannel = mitmproxyProcessManager.startProxyProcess(proxyId, proxyInstance.params)
+            var processId: ProcessId? = null
+            var error: GenericError? = null
+            for (status in startupStatusChannel) {
+                val updatedState = status.state
+                when (status) {
+                    is MitmproxyProcessManager.StartupStatus.Starting -> {
+                        processId = null
+                        error = null
                     }
-                    updateSingleProxy(proxyId) {
+
+                    is MitmproxyProcessManager.StartupStatus.Started -> {
+                        processId = status.processId
+                        error = null
+                    }
+
+                    is MitmproxyProcessManager.StartupStatus.Failed -> {
+                        processId = null
+                        error = makeGenericError(ErrorType.PROXY_STARTUP_FAILURE, status.errorMessage)
+                    }
+                }
+                proxyStore.updateProxy(proxyId) {
+                    copy {
                         processStatus = processStatus {
                             this.state = updatedState
                             processId?.let { this.processId = it } ?: this.clearProcessId()
@@ -145,38 +141,49 @@ class ProxyRepository(
                         }
                     }
                 }
-                if (processId == null) {
-                    throw error?.asException()
-                        ?: makeGenericErrorAsException(ErrorType.PROXY_STARTUP_FAILURE, "Unknown error")
-                }
-                processId
             }
-        }.await()
+            if (processId == null) {
+                logger.error("Failed to start proxy with id: $proxyId", error?.asException())
+                throw error?.asException()
+                    ?: makeGenericErrorAsException(ErrorType.PROXY_STARTUP_FAILURE, "Unknown error")
+            }
+            logger.debug("Proxy with id: $proxyId started in process $processId")
+            processId
+        }
     }
 
     suspend fun stopProxy(proxyId: ProxyId): Result<Unit> {
-        return scope.async {
-            runCatching {
-                val proxyInstance = tryFindProxyInstance(proxyId)
-                if (proxyInstance.processStatusOrNull?.hasProcessId() == false) {
-                    return@runCatching
-                }
+        return runCatching {
+            logger.debug("Stopping proxy with id: $proxyId")
+            val proxyInstance = proxyStore.getProxy(proxyId)
+                ?: throw makeGenericErrorAsException(
+                    type = ErrorType.PROXY_NOT_FOUND,
+                    message = "Proxy $proxyId not found"
+                )
 
-                val statusChannel = mitmproxyProcessManager.stopProxyProcess(proxyId)
-                var error: GenericError? = null
-                for (status in statusChannel) {
-                    when (status) {
-                        is MitmproxyProcessManager.ShutdownStatus.Stopping -> {
-                            error = null
-                        }
-                        is MitmproxyProcessManager.ShutdownStatus.Stopped -> {
-                            error = null
-                        }
-                        is MitmproxyProcessManager.ShutdownStatus.Failed -> {
-                            error = makeGenericError(ErrorType.PROXY_SHUTDOWN_FAILURE, status.errorMessage)
-                        }
+            if (proxyInstance.processStatusOrNull?.hasProcessId() == false) {
+                logger.debug("Proxy with id: $proxyId is not started")
+                return@runCatching
+            }
+
+            val statusChannel = mitmproxyProcessManager.stopProxyProcess(proxyId)
+            var error: GenericError? = null
+            for (status in statusChannel) {
+                when (status) {
+                    is MitmproxyProcessManager.ShutdownStatus.Stopping -> {
+                        error = null
                     }
-                    updateSingleProxy(proxyId) {
+
+                    is MitmproxyProcessManager.ShutdownStatus.Stopped -> {
+                        error = null
+                    }
+
+                    is MitmproxyProcessManager.ShutdownStatus.Failed -> {
+                        error = makeGenericError(ErrorType.PROXY_SHUTDOWN_FAILURE, status.errorMessage)
+                    }
+                }
+                proxyStore.updateProxy(proxyId) {
+                    copy {
                         processStatus = processStatus {
                             this.state = status.state
                             this.clearProcessId()
@@ -184,17 +191,19 @@ class ProxyRepository(
                         }
                     }
                 }
-                if (error != null) {
-                    throw error.asException()
-                }
-                Unit
             }
-        }.await()
+            if (error != null) {
+                logger.error("Failed to stop proxy with id: $proxyId", error.asException())
+                throw error.asException()
+            }
+            logger.debug("Proxy with id: $proxyId stopped")
+        }
     }
 
     override fun close() {
-        mitmproxyProcessManager.close()
-        _proxiesFlow.update { emptyList() }
+        // TODO триггерить close зависимостей или нет 🤔
+        //mitmproxyProcessManager.close()
+        //_proxiesFlow.update { emptyList() }
     }
 
     private fun generateProxyId(params: ProxyParams): ProxyId {
@@ -205,68 +214,5 @@ class ProxyRepository(
                 "port" to params.port.toString(),
             )
         )
-    }
-
-    private fun tryFindProxyInstance(proxyId: ProxyId): ProxyInstance {
-        return _proxiesFlow.value.find { it.proxyId == proxyId }
-            ?: throw makeGenericErrorAsException(
-                type = ErrorType.PROXY_NOT_FOUND,
-                message = "Proxy $proxyId not found"
-            )
-    }
-
-    private fun updateSingleProxy(proxyId: ProxyId, updater: ProxyInstanceKt.Dsl.() -> Unit) =
-        _proxiesFlow.update { proxies ->
-            val proxy = proxies.find { it.proxyId == proxyId } ?: return@update proxies
-            proxies.filterNot { it.proxyId == proxyId } + proxy.copy {
-                updater(this)
-                updatedAt = Instant.now().asProtoTimestamp()
-            }
-        }
-
-    private fun validateProxyParams(proxyParams: ProxyParams): Result<Boolean> = runCatching {
-        if (proxyParams.name.trim().isEmpty()) {
-            throw makeGenericErrorAsException(
-                ErrorType.PROXY_PARAMS_INCOMPLETE,
-                "Proxy name is required"
-            )
-        }
-
-        if (proxyParams.port !in 0..65535) {
-            throw makeGenericErrorAsException(
-                ErrorType.PROXY_PARAMS_INVALID,
-                "Proxy port ${proxyParams.port} is incorrect"
-            )
-        }
-
-        if (proxyParams.port in _proxiesFlow.value.map { it.params.port }.toSet()) {
-            throw makeGenericErrorAsException(
-                ErrorType.PROXY_PORT_ALREADY_IN_USE,
-                "Proxy port ${proxyParams.port} is already in use"
-            )
-        }
-
-        if (proxyParams.type == ProxyType.PROXY_TYPE_UPSTREAM && proxyParams.upstreamProxyParamsOrNull == null) {
-            throw makeGenericErrorAsException(
-                ErrorType.PROXY_PARAMS_INCOMPLETE,
-                "Upstream proxy params are required"
-            )
-        }
-
-        if (proxyParams.type == ProxyType.PROXY_TYPE_REVERSE && proxyParams.reverseProxyParamsOrNull == null) {
-            throw makeGenericErrorAsException(
-                ErrorType.PROXY_PARAMS_INCOMPLETE,
-                "Reverse proxy params are required"
-            )
-        }
-
-        if (proxyParams.type == ProxyType.PROXY_TYPE_TRANSPARENT && proxyParams.transparentProxyParamsOrNull == null) {
-            throw makeGenericErrorAsException(
-                ErrorType.PROXY_PARAMS_INCOMPLETE,
-                "Transparent proxy params are required"
-            )
-        }
-
-        true
     }
 }
