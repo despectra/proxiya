@@ -21,6 +21,10 @@ interface ConfigRepository<T> {
 
 /**
  * Базовая реализация репозитория для YAML файлов
+ *
+ * @property filePath путь к файлу конфига, относительно рутовой директории с YAML-конфигами
+ * @property serializer объект-сериалайзер для модели
+ * @property defaultConfig значение по-умолчанию в случае отсутствия конфига
  */
 abstract class YamlConfigRepository<T>(
     private val filePath: Path,
