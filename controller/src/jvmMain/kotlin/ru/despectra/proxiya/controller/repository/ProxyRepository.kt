@@ -200,6 +200,37 @@ class ProxyRepository(
         }
     }
 
+    suspend fun setProxyInstanceFunctionalityStatus(proxyId: ProxyId, state: ProxyState, error: GenericError?): Result<Unit> {
+        return runCatching {
+            proxyStore.updateProxy(proxyId) {
+                copy {
+                    this.functionalityStatus = proxyFunctionalityStatus {
+                        this.state = state
+                        if (error != null) {
+                            this.error = error
+                        } else {
+                            this.clearError()
+                        }
+                    }
+                    this.updatedAt = Instant.now().asProtoTimestamp()
+                }
+            }
+        }
+    }
+
+    suspend fun setProxyInstanceStreamingStatus(proxyId: ProxyId, isStreamingEnabled: Boolean): Result<Unit> {
+        return runCatching {
+            proxyStore.updateProxy(proxyId) {
+                copy {
+                    this.functionalityStatus = proxyFunctionalityStatus {
+                        this.streamingEnabled = isStreamingEnabled
+                    }
+                    this.updatedAt = Instant.now().asProtoTimestamp()
+                }
+            }
+        }
+    }
+
     override fun close() {
         // TODO триггерить close зависимостей или нет 🤔
         //mitmproxyProcessManager.close()
