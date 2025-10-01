@@ -20,6 +20,7 @@ import ru.despectra.proxiya.controller.config.proxies.v2.ProxiesListConfig
 import ru.despectra.proxiya.controller.config.proxies.v2.ProxiesListConfigRepository
 import ru.despectra.proxiya.controller.repository.ProxyId
 import ru.despectra.proxiya.controller.config.proxies.ProxyConfigMapper
+import ru.despectra.proxiya.controller.utils.MutexByKey
 import ru.despectra.proxiya.proto.proxy.ProxyInstance
 import java.io.Closeable
 import java.util.concurrent.ConcurrentHashMap
@@ -33,7 +34,7 @@ class ProxyStore(
     private val proxiesMap = ConcurrentHashMap<ProxyId, ProxyInstance>()
     private val _proxiesListFlow = MutableStateFlow<List<ProxyInstance>>(emptyList())
 
-    private val locks = MutexStore<ProxyId>()
+    private val mutexByKey = MutexByKey<ProxyId>()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val logger = LoggerFactory.getLogger(javaClass)
 
@@ -48,14 +49,14 @@ class ProxyStore(
 
     suspend fun saveProxy(proxyInstance: ProxyInstance) {
         val proxyId = proxyInstance.proxyId
-        locks[proxyId].withLock {
+        mutexByKey[proxyId].withLock {
             proxiesMap[proxyId] = proxyInstance
             _proxiesListFlow.value = proxiesMap.values.toList()
         }
     }
 
     suspend fun updateProxy(proxyId: ProxyId, updater: ProxyInstance.() -> ProxyInstance) {
-        locks[proxyId].withLock {
+        mutexByKey[proxyId].withLock {
             proxiesMap[proxyId]?.let {
                 proxiesMap[proxyId] = updater(it)
                 _proxiesListFlow.value = proxiesMap.values.toList()
@@ -64,8 +65,8 @@ class ProxyStore(
     }
 
     suspend fun removeProxy(proxyId: ProxyId) {
-        locks[proxyId].withLock {
-            locks.remove(proxyId)
+        mutexByKey[proxyId].withLock {
+            mutexByKey.remove(proxyId)
             proxiesMap.remove(proxyId)
             _proxiesListFlow.value = proxiesMap.values.toList()
         }
@@ -107,7 +108,7 @@ class ProxyStore(
 
     override fun close() {
         scope.cancel()
-        locks.clear()
+        mutexByKey.clear()
     }
 
     companion object {
