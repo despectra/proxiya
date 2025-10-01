@@ -16,10 +16,10 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.withLock
 import org.slf4j.LoggerFactory
+import ru.despectra.proxiya.controller.config.proxies.ProxyConfigMapper
 import ru.despectra.proxiya.controller.config.proxies.v2.ProxiesListConfig
 import ru.despectra.proxiya.controller.config.proxies.v2.ProxiesListConfigRepository
 import ru.despectra.proxiya.controller.repository.ProxyId
-import ru.despectra.proxiya.controller.config.proxies.ProxyConfigMapper
 import ru.despectra.proxiya.controller.utils.MutexByKey
 import ru.despectra.proxiya.proto.proxy.ProxyInstance
 import java.io.Closeable
@@ -45,6 +45,10 @@ class ProxyStore(
             loadProxiesFromConfig()
             setupConfigAutosaveOnChanges()
         }
+    }
+
+    fun getProxy(proxyId: ProxyId): ProxyInstance? {
+        return proxiesMap[proxyId]
     }
 
     suspend fun saveProxy(proxyInstance: ProxyInstance) {
