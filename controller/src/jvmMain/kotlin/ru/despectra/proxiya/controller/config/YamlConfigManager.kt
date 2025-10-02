@@ -2,6 +2,8 @@ package ru.despectra.proxiya.controller.config
 
 import com.charleskorn.kaml.Yaml
 import kotlinx.serialization.KSerializer
+import kotlinx.serialization.modules.SerializersModule
+import kotlinx.serialization.modules.contextual
 import org.slf4j.LoggerFactory
 import java.nio.file.Files
 import java.nio.file.Path
@@ -12,7 +14,11 @@ import java.nio.file.Paths
  */
 class YamlConfigManager {
     private val logger = LoggerFactory.getLogger(YamlConfigManager::class.java)
-    private val yaml = Yaml.default
+    private val yaml = Yaml(
+        serializersModule = SerializersModule {
+            contextual(LocalDateTimeSerializer())
+        }
+    )
     val configDir: Path = getConfigDirectory()
     
     init {
