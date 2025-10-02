@@ -1,10 +1,7 @@
-package ru.despectra.proxiya.controller.config.proxies
+package ru.despectra.proxiya.controller.config.proxy
 
 import org.slf4j.LoggerFactory
-import ru.despectra.proxiya.controller.config.proxies.v2.EndpointConfig
-import ru.despectra.proxiya.controller.config.proxies.v2.ProxyConfig
-import ru.despectra.proxiya.controller.config.proxies.v2.ReverseProxyParamsConfig
-import ru.despectra.proxiya.controller.config.proxies.v2.UpstreamProxyParamsConfig
+import ru.despectra.proxiya.controller.config.common.EndpointConfig
 import ru.despectra.proxiya.controller.repository.ProxyId
 import ru.despectra.proxiya.controller.utils.asProtoTimestamp
 import ru.despectra.proxiya.proto.common.endpoint

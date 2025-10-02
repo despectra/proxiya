@@ -1,4 +1,4 @@
-package ru.despectra.proxiya.controller.config.proxies.v2
+package ru.despectra.proxiya.controller.config.proxy
 
 import ru.despectra.proxiya.controller.config.YamlConfigRepository
 import java.nio.file.Paths

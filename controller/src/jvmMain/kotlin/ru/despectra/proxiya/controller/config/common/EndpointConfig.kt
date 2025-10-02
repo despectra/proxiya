@@ -1,4 +1,4 @@
-package ru.despectra.proxiya.controller.config.proxies.v2
+package ru.despectra.proxiya.controller.config.common
 
 import kotlinx.serialization.Serializable
 

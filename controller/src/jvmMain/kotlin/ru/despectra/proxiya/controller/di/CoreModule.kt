@@ -3,8 +3,8 @@ package ru.despectra.proxiya.controller.di
 import org.koin.core.KoinApplication
 import org.koin.dsl.module
 import org.koin.dsl.onClose
-import ru.despectra.proxiya.controller.config.proxies.ProxyConfigMapper
-import ru.despectra.proxiya.controller.config.proxies.v2.ProxiesListConfigRepository
+import ru.despectra.proxiya.controller.config.proxy.ProxyConfigMapper
+import ru.despectra.proxiya.controller.config.proxy.ProxiesListConfigRepository
 import ru.despectra.proxiya.controller.grpc.ProxyControlServiceImpl
 import ru.despectra.proxiya.controller.grpc.ProxyDataServiceImpl
 import ru.despectra.proxiya.controller.grpc.instance.ProxyInstanceControlServiceImpl
