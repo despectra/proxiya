@@ -9,7 +9,7 @@ import ru.despectra.proxiya.proto.data.interception.ResponseProcessingResult
 import ru.despectra.proxiya.proto.service.data.ProxyDataServiceGrpcKt
 
 /**
- * Реализация gRPC сервиса для двунаправленного стриминга данных запросов и ответов от mitmproxy аддонов в UI
+ * Реализация gRPC сервиса для двунаправленного стриминга данных перехваченных запросов и ответов от mitmproxy аддонов в UI
  *
  * Методы этого сервиса вызываются из **UI-приложения**
  */
