@@ -16,7 +16,7 @@ import ru.despectra.proxiya.proto.service.instance.control.ProxyStoppedNotificat
  *
  * Методы этого сервиса вызываются из mitmproxy-аддона
  */
-class ProxyInstanceControlService(
+class ProxyInstanceControlServiceImpl(
     private val proxyRepository: ProxyRepository,
 ) : ProxyInstanceControlServiceGrpcKt.ProxyInstanceControlServiceCoroutineImplBase() {
 

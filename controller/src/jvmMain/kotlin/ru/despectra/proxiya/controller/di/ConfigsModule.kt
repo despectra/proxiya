@@ -6,24 +6,27 @@ import ru.despectra.proxiya.controller.config.general.GeneralConfigRepository
 import ru.despectra.proxiya.controller.config.proxies.ProxyConfigMapper
 import ru.despectra.proxiya.controller.config.proxies.ProxyConfigRepository
 import ru.despectra.proxiya.controller.config.proxies.RegisteredProxiesConfigRepository
+import ru.despectra.proxiya.controller.config.proxies.v2.ProxiesListConfigRepository
 import java.nio.file.Path
 
-fun KoinApplication.configsModule() {
-    module {
-        factory<GeneralConfigRepository> {
-            GeneralConfigRepository()
-        }
+fun KoinApplication.configsModule() = module {
+    factory<GeneralConfigRepository> {
+        GeneralConfigRepository()
+    }
 
-        factory<RegisteredProxiesConfigRepository> {
-            RegisteredProxiesConfigRepository()
-        }
+    factory<RegisteredProxiesConfigRepository> {
+        RegisteredProxiesConfigRepository()
+    }
 
-        factory<ProxyConfigRepository> { (filePath: Path) ->
-            ProxyConfigRepository(filePath)
-        }
+    factory<ProxyConfigRepository> { (filePath: Path) ->
+        ProxyConfigRepository(filePath)
+    }
 
-        factory<ProxyConfigMapper> {
-            ProxyConfigMapper()
-        }
+    factory<ProxiesListConfigRepository> {
+        ProxiesListConfigRepository()
+    }
+
+    factory<ProxyConfigMapper> {
+        ProxyConfigMapper()
     }
 }
