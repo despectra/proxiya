@@ -9,16 +9,21 @@ import androidx.compose.ui.window.rememberWindowState
 import com.arkivanov.decompose.DefaultComponentContext
 import com.arkivanov.decompose.extensions.compose.lifecycle.LifecycleController
 import com.arkivanov.essenty.lifecycle.LifecycleRegistry
+import ru.despectra.proxiya.app.component.root.AppComponent
+import ru.despectra.proxiya.app.component.root.ProxiyaApp
 import ru.despectra.proxiya.app.di.initDependencyInjectionContainer
 import ru.despectra.proxiya.app.util.runOnUiThread
 
 fun main() {
-    val dependencyInjectionContainer = initDependencyInjectionContainer()
-
+    val diContainer = initDependencyInjectionContainer()
     val lifecycle = LifecycleRegistry()
-    runOnUiThread {
-        val defaultComponentContext = DefaultComponentContext(
-            lifecycle = lifecycle
+
+    val appComponentFactory: AppComponent.Factory by diContainer.koin.inject()
+    val appComponent = runOnUiThread {
+        appComponentFactory.create(
+            DefaultComponentContext(
+                lifecycle = lifecycle
+            )
         )
     }
 
@@ -27,7 +32,7 @@ fun main() {
         Window(
             onCloseRequest = {
                 exitApplication()
-                dependencyInjectionContainer.close()
+                diContainer.close()
             },
             title = "Proxiya",
             state = windowState,
@@ -38,7 +43,7 @@ fun main() {
                 windowInfo = LocalWindowInfo.current,
             )
 
-            App()
+            ProxiyaApp(appComponent)
         }
     }
 }
