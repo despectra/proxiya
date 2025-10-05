@@ -5,10 +5,14 @@ import ru.despectra.proxiya.controller.config.common.EndpointConfig
 import ru.despectra.proxiya.controller.repository.ProxyId
 import ru.despectra.proxiya.controller.utils.asProtoTimestamp
 import ru.despectra.proxiya.proto.common.endpoint
+import ru.despectra.proxiya.proto.proxy.ProcessState
 import ru.despectra.proxiya.proto.proxy.ProxyInstance
+import ru.despectra.proxiya.proto.proxy.ProxyState
 import ru.despectra.proxiya.proto.proxy.ProxyType
 import ru.despectra.proxiya.proto.proxy.createdAtOrNull
 import ru.despectra.proxiya.proto.proxy.paramsOrNull
+import ru.despectra.proxiya.proto.proxy.processStatus
+import ru.despectra.proxiya.proto.proxy.proxyFunctionalityStatus
 import ru.despectra.proxiya.proto.proxy.proxyInstance
 import ru.despectra.proxiya.proto.proxy.proxyParams
 import ru.despectra.proxiya.proto.proxy.reverseProxyParams
@@ -62,6 +66,13 @@ class ProxyConfigMapper {
             this.hostsBlacklist.addAll(proxyConfig.hostsBlacklist)
             this.extraCmdParams.addAll(proxyConfig.extraCommandParams)
             this.autostart = proxyConfig.autostart
+        }
+        this.processStatus = processStatus {
+            this.state = ProcessState.PROCESS_STATE_STOPPED
+        }
+        this.functionalityStatus = proxyFunctionalityStatus {
+            this.state = ProxyState.PROXY_STATE_STOPPED
+            this.streamingEnabled = false
         }
         this.createdAt = proxyConfig.createdAt.toInstant(ZoneOffset.UTC).asProtoTimestamp()
         this.updatedAt = Instant.now().asProtoTimestamp()

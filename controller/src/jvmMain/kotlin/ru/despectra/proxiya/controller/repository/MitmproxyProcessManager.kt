@@ -2,10 +2,9 @@ package ru.despectra.proxiya.controller.repository
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.channels.ReceiveChannel
-import kotlinx.coroutines.channels.produce
-import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.runBlocking
@@ -36,93 +35,111 @@ class MitmproxyProcessManager : Closeable {
 
     private val logger = LoggerFactory.getLogger(javaClass)
 
-    suspend fun startProxyProcess(
+    fun startProxyProcess(
         proxyId: ProxyId,
         proxyParams: ProxyParams,
-    ): ReceiveChannel<StartupStatus> = coroutineScope {
+    ): Flow<StartupStatus> = flow {
+        logger.debug("startProxyProcess for proxy $proxyId")
         if (isClosing.get()) {
-            return@coroutineScope produce {
-                send(StartupStatus.Failed("Proxy process manager is closing"))
-                close()
-            }
+            logger.debug("mitmproxy manager is closing, return")
+            emit(StartupStatus.Failed("Proxy process manager is closing"))
+            return@flow
         }
 
-        produce {
-            mutexByKey[proxyId].withLock {
-                proxyProcesses[proxyId]?.let { existingProcess ->
-                    send(StartupStatus.Started(existingProcess.processId))
-                    close()
-                    return@produce
+        logger.debug("starting procedure...")
+        mutexByKey[proxyId].withLock {
+            logger.debug("lock $proxyId acquired")
+            proxyProcesses[proxyId]?.let { existingProcess ->
+                logger.debug("process for $proxyId already exists, PID ${existingProcess.processId}")
+                emit(StartupStatus.Started(existingProcess.processId))
+                logger.debug("Started >>> channel")
+                logger.debug("close() >>> channel")
+                logger.debug("lock $proxyId released")
+                return@withLock
+            }
+
+            try {
+                logger.debug("starting process...")
+                processOperationsCount.value++
+                logger.debug("process ops count = ${processOperationsCount.value}")
+                emit(StartupStatus.Starting)
+                logger.debug("Starting >>> channel")
+
+                val process = withContext(Dispatchers.IO) {
+                    startMitmproxyProcess(proxyId, proxyParams)
                 }
+                val processId = process.pid().toInt()
+                proxyProcesses[proxyId] = ProxyProcessDescriptor(processId, process)
 
-                try {
-                    processOperationsCount.value++
-                    send(StartupStatus.Starting)
-
-                    val process = withContext(Dispatchers.IO) {
-                        startMitmproxyProcess(proxyId, proxyParams)
-                    }
-                    val processId = process.pid().toInt()
-                    proxyProcesses[proxyId] = ProxyProcessDescriptor(processId, process)
-
-                    send(StartupStatus.Started(processId))
-                } catch (e: Exception) {
-                    proxyProcesses.remove(proxyId)
-                    mutexByKey.remove(proxyId)
-                    send(StartupStatus.Failed(e.message ?: "Unknown error"))
-                } finally {
-                    processOperationsCount.value--
-                    close()
-                }
+                logger.debug("process started, PID $processId")
+                emit(StartupStatus.Started(processId))
+                logger.debug("Started >>> channel")
+            } catch (e: Exception) {
+                proxyProcesses.remove(proxyId)
+                mutexByKey.remove(proxyId)
+                logger.error("process start error", e)
+                emit(StartupStatus.Failed(e.message ?: "Unknown error"))
+                logger.debug("Failed >>> channel")
+            } finally {
+                processOperationsCount.value--
+                logger.debug("process ops count = ${processOperationsCount.value}")
+                logger.debug("lock $proxyId released")
             }
         }
     }
 
-    suspend fun stopProxyProcess(
+    fun stopProxyProcess(
         proxyId: ProxyId
-    ): ReceiveChannel<ShutdownStatus> = coroutineScope {
+    ): Flow<ShutdownStatus> = flow {
         if (isClosing.get()) {
-            return@coroutineScope produce {
-                send(ShutdownStatus.Failed("Proxy process manager is closing"))
-                close()
-            }
+            logger.debug("mitmproxy manager is closing, return")
+            emit(ShutdownStatus.Failed("Proxy process manager is closing"))
+            return@flow
         }
 
-        produce {
-            mutexByKey[proxyId].withLock {
-                val processDescriptor = proxyProcesses[proxyId]
-                if (processDescriptor == null) {
-                    send(ShutdownStatus.Stopped)
-                    close()
-                    return@produce
+        mutexByKey[proxyId].withLock {
+            logger.debug("lock $proxyId acquired")
+            val processDescriptor = proxyProcesses[proxyId]
+            if (processDescriptor == null) {
+                logger.debug("process for $proxyId not found, return")
+                emit(ShutdownStatus.Stopped)
+                logger.debug("Stopped >>> channel")
+                logger.debug("lock $proxyId released")
+                return@flow
+            }
+
+            var stopped = false
+            try {
+                processOperationsCount.value++
+                logger.debug("process ops count = ${processOperationsCount.value}")
+                logger.debug("Stopping >>> channel")
+                emit(ShutdownStatus.Stopping)
+
+                withContext(Dispatchers.IO) {
+                    stopMitmproxyProcess(processDescriptor.process)
                 }
 
-                var stopped = false
-                try {
-                    processOperationsCount.value++
-                    send(ShutdownStatus.Stopping)
-
-                    withContext(Dispatchers.IO) {
-                        stopMitmproxyProcess(processDescriptor.process)
-                    }
-
-                    stopped = true
-                    send(ShutdownStatus.Stopped)
-                } catch (e: Exception) {
-                    send(ShutdownStatus.Failed(e.message ?: "Unknown error"))
-                } finally {
-                    if (stopped) {
-                        proxyProcesses.remove(proxyId)
-                        mutexByKey.remove(proxyId)
-                    }
-                    processOperationsCount.value--
-                    close()
+                stopped = true
+                emit(ShutdownStatus.Stopped)
+                logger.debug("Stopped >>> channel")
+            } catch (e: Exception) {
+                emit(ShutdownStatus.Failed(e.message ?: "Unknown error"))
+                logger.debug("Failed >>> channel")
+            } finally {
+                if (stopped) {
+                    logger.debug("removing process descriptor for $proxyId")
+                    proxyProcesses.remove(proxyId)
+                    mutexByKey.remove(proxyId)
                 }
+                processOperationsCount.value--
+                logger.debug("process ops count = ${processOperationsCount.value}")
+                logger.debug("lock $proxyId released")
             }
         }
     }
 
     private fun startMitmproxyProcess(proxyId: String, proxyParams: ProxyParams): Process {
+        logger.debug("startMitmproxyProcess..")
         // Путь к аддону
         val addonPath = File("mitmproxy_addon/proxiya_addon.py").absolutePath // TODO from config
 
@@ -174,11 +191,12 @@ class MitmproxyProcessManager : Closeable {
         processBuilder.redirectOutput(ProcessBuilder.Redirect.PIPE)
         processBuilder.redirectError(ProcessBuilder.Redirect.PIPE)
 
+        logger.debug("creating Process instance...")
         val process = processBuilder.start()
 
         // Проверяем, что процесс запустился успешно
         if (process.isAlive) {
-            logger.info("mitmproxy process for proxy $proxyId started successfully (PID: ${process.pid()})")
+            logger.debug("mitmproxy process for proxy $proxyId started successfully (PID: ${process.pid()})")
             return process
         } else {
             logger.error("mitmproxy process failed to start")

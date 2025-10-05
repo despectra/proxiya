@@ -111,10 +111,12 @@ class ProxyRepository(
                 logger.debug("Proxy with id: $proxyId already started in process $pid")
                 return@runCatching pid
             }
-            val startupStatusChannel = mitmproxyProcessManager.startProxyProcess(proxyId, proxyInstance.params)
+            val startupStatusFlow = mitmproxyProcessManager.startProxyProcess(proxyId, proxyInstance.params)
             var processId: ProcessId? = null
             var error: GenericError? = null
-            for (status in startupStatusChannel) {
+            logger.debug("Start receiving statuses from process startup channel...")
+            startupStatusFlow.collect { status ->
+                logger.debug("channel >>> received $status")
                 val updatedState = status.state
                 when (status) {
                     is MitmproxyProcessManager.StartupStatus.Starting -> {
@@ -142,13 +144,13 @@ class ProxyRepository(
                     }
                 }
             }
-            if (processId == null) {
+            processId.also {
+                logger.debug("Proxy with id: $proxyId started in process PID $it")
+            } ?: let {
                 logger.error("Failed to start proxy with id: $proxyId", error?.asException())
                 throw error?.asException()
                     ?: makeGenericErrorAsException(ErrorType.PROXY_STARTUP_FAILURE, "Unknown error")
             }
-            logger.debug("Proxy with id: $proxyId started in process $processId")
-            processId
         }
     }
 
@@ -166,9 +168,9 @@ class ProxyRepository(
                 return@runCatching
             }
 
-            val statusChannel = mitmproxyProcessManager.stopProxyProcess(proxyId)
+            val statusFlow = mitmproxyProcessManager.stopProxyProcess(proxyId)
             var error: GenericError? = null
-            for (status in statusChannel) {
+            statusFlow.collect { status ->
                 when (status) {
                     is MitmproxyProcessManager.ShutdownStatus.Stopping -> {
                         error = null
@@ -192,9 +194,9 @@ class ProxyRepository(
                     }
                 }
             }
-            if (error != null) {
-                logger.error("Failed to stop proxy with id: $proxyId", error.asException())
-                throw error.asException()
+            error?.let {
+                logger.error("Failed to stop proxy with id: $proxyId", it.asException())
+                throw it.asException()
             }
             logger.debug("Proxy with id: $proxyId stopped")
         }

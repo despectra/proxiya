@@ -49,7 +49,7 @@ class ProxiyaControllerServer(
         logger.info("Stopping Proxiya Controller...")
 
         // Останавливаем gRPC сервер
-        server?.shutdown()
+        server?.shutdownNow()
         server?.awaitTermination()
 
         logger.info("Proxiya Controller stopped")
