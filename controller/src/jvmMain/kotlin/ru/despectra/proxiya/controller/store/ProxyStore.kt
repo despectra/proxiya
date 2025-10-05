@@ -5,6 +5,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
@@ -16,9 +17,9 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.withLock
 import org.slf4j.LoggerFactory
-import ru.despectra.proxiya.controller.config.proxy.ProxyConfigMapper
 import ru.despectra.proxiya.controller.config.proxy.ProxiesListConfig
 import ru.despectra.proxiya.controller.config.proxy.ProxiesListConfigRepository
+import ru.despectra.proxiya.controller.config.proxy.ProxyConfigMapper
 import ru.despectra.proxiya.controller.repository.ProxyId
 import ru.despectra.proxiya.controller.utils.MutexByKey
 import ru.despectra.proxiya.proto.proxy.ProxyInstance
@@ -33,6 +34,7 @@ class ProxyStore(
 ) : Closeable {
     private val proxiesMap = ConcurrentHashMap<ProxyId, ProxyInstance>()
     private val _proxiesListFlow = MutableStateFlow<List<ProxyInstance>>(emptyList())
+    private val proxySaveToConfigSignal = MutableSharedFlow<Unit>()
 
     private val mutexByKey = MutexByKey<ProxyId>()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -56,6 +58,7 @@ class ProxyStore(
         mutexByKey[proxyId].withLock {
             proxiesMap[proxyId] = proxyInstance
             _proxiesListFlow.value = proxiesMap.values.toList()
+            proxySaveToConfigSignal.emit(Unit)
         }
     }
 
@@ -64,6 +67,7 @@ class ProxyStore(
             proxiesMap[proxyId]?.let {
                 proxiesMap[proxyId] = updater(it)
                 _proxiesListFlow.value = proxiesMap.values.toList()
+                proxySaveToConfigSignal.emit(Unit)
             }
         }
     }
@@ -73,23 +77,30 @@ class ProxyStore(
             mutexByKey.remove(proxyId)
             proxiesMap.remove(proxyId)
             _proxiesListFlow.value = proxiesMap.values.toList()
+            proxySaveToConfigSignal.emit(Unit)
         }
     }
 
     private suspend fun loadProxiesFromConfig() {
         proxiesListConfigRepository.load()?.let { proxiesListConfig ->
-            proxiesListConfig.proxies.forEach { (proxyId, proxyConfig) ->
+            for ((proxyId, proxyConfig) in proxiesListConfig.proxies) {
+                if (proxyId.isBlank()) {
+                    continue
+                }
                 val proxyInstance = proxyConfigMapper.proxyInstanceFromConfig(proxyId, proxyConfig)
-                saveProxy(proxyInstance)
+                mutexByKey[proxyInstance.proxyId].withLock {
+                    proxiesMap[proxyId] = proxyInstance
+                }
             }
+            _proxiesListFlow.value = proxiesMap.values.toList()
         }
     }
 
     private fun CoroutineScope.setupConfigAutosaveOnChanges() {
-        _proxiesListFlow
+        proxySaveToConfigSignal
             .debounce(SAVE_TO_CONFIG_DEBOUNCE_MS.milliseconds)
-            .map { proxyInstanceList ->
-                val proxyConfigs = proxyInstanceList.mapNotNull { proxyInstance ->
+            .map {
+                val proxyConfigs = _proxiesListFlow.value.mapNotNull { proxyInstance ->
                     if (!proxyInstance.hasProxyId()) return@mapNotNull null
                     if (!proxyInstance.hasCreatedAt()) return@mapNotNull null
                     if (!proxyInstance.hasParams()) return@mapNotNull null
