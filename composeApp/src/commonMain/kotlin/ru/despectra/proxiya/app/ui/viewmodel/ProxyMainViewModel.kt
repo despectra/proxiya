@@ -8,8 +8,9 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import ru.despectra.proxiya.app.data.proxy.ProxiesRepository
-import ru.despectra.proxiya.proto.control.ProxyControl
-import ru.despectra.proxiya.proto.control.ProxyManagementServiceOuterClass.ProxiesListState
+import ru.despectra.proxiya.proto.proxy.ProcessState
+import ru.despectra.proxiya.proto.proxy.paramsOrNull
+import ru.despectra.proxiya.proto.service.control.ProxiesList
 import java.util.logging.Level
 import java.util.logging.Logger
 
@@ -60,22 +61,29 @@ class ProxyMainViewModel(
         }
     }
 
-    private fun updateProxyStateFromStream(proxiesListState: ProxiesListState, currentProxyId: String) {
+    private fun updateProxyStateFromStream(proxiesList: ProxiesList, currentProxyId: String) {
         try {
             logger.info("Updating proxy state from stream: proxy ID = $currentProxyId")
             // Ищем прокси по ID в списке
-            val proxyInfo = proxiesListState.proxyInfoList.find { it.proxyId == currentProxyId }
+            val proxyInfo = proxiesList.proxyInstanceList.find { it.proxyId == currentProxyId }
             
             if (proxyInfo != null) {
                 _proxyState.value = ProxyState.Loaded(
-                    name = proxyInfo.proxyName,
-                    type = proxyInfo.proxyType.name,
-                    port = proxyInfo.port.toString(),
-                    status = when (proxyInfo.status) {
-                        ProxyControl.ProxyStatus.PROXY_STATUS_RUNNING -> ProxyItemVo.Status.ACTIVE
-                        ProxyControl.ProxyStatus.PROXY_STATUS_ERROR -> ProxyItemVo.Status.ERROR
-                        ProxyControl.ProxyStatus.PROXY_STATUS_STARTING -> ProxyItemVo.Status.TRANSIENT
-                        else -> ProxyItemVo.Status.IDLE
+                    name = proxyInfo.params.name,
+                    type = proxyInfo.paramsOrNull?.type?.name ?: "unknown",
+                    port = proxyInfo.params.port.toString(),
+                    status = when (proxyInfo.processStatus.state) {
+                        ProcessState.PROCESS_STATE_RUNNING -> ProxyItemVo.Status.ACTIVE
+
+                        ProcessState.PROCESS_STATE_ERROR -> ProxyItemVo.Status.ERROR
+
+                        ProcessState.PROCESS_STATE_STOPPING,
+                        ProcessState.PROCESS_STATE_STARTING -> ProxyItemVo.Status.TRANSIENT
+
+                        ProcessState.PROCESS_STATE_STOPPED -> ProxyItemVo.Status.IDLE
+
+                        // TODO improve status VO
+                        else -> ProxyItemVo.Status.ERROR
                     },
                     processId = null
                 )
@@ -116,13 +124,6 @@ class ProxyMainViewModel(
     fun refresh() {
         // Состояние обновляется автоматически через stream
         // Можно добавить принудительное обновление если нужно
-    }
-
-    override fun onCleared() {
-        super.onCleared()
-        viewModelScope.launch {
-            proxiesRepository.unsubscribeFromProxies()
-        }
     }
 }
 

@@ -2,45 +2,32 @@ package ru.despectra.proxiya.app.data.proxy
 
 import kotlinx.coroutines.flow.Flow
 import ru.despectra.proxiya.app.service.ProxyControlService
-import ru.despectra.proxiya.app.service.SharedProxiesStreamService
-import ru.despectra.proxiya.app.utils.generateProxyId
-import ru.despectra.proxiya.proto.control.ProxyControl
-import ru.despectra.proxiya.proto.control.ProxyManagementServiceOuterClass
+import ru.despectra.proxiya.proto.proxy.proxyParams
+import ru.despectra.proxiya.proto.service.control.ProxiesList
 import java.util.logging.Level
 import java.util.logging.Logger
+import ru.despectra.proxiya.proto.proxy.ProxyType as ProtoProxyType
 
 class ProxiesRepository(
     private val proxyControlService: ProxyControlService,
-    private val sharedProxiesStreamService: SharedProxiesStreamService,
 ) {
 
     private val logger = Logger.getLogger(ProxiesRepository::class.java.name)
 
-    suspend fun createProxy(name: String, proxyType: ProxyType, port: Int, additionalParams: String) {
-        val proxyId = generateProxyId(
-            name,
-            mapOf(
-                "port" to port.toString(),
-                "type" to proxyType.name,
-                "params" to additionalParams,
-            )
-        )
-        val proxyConfig = ProxyControl.ProxyConfig.newBuilder()
-            .setProxyId(proxyId)
-            .setProxyName(name)
-            .setPort(port)
-            .setProxyType(when (proxyType) {
-                ProxyType.Https -> ProxyControl.ProxyType.PROXY_HTTPS
-                ProxyType.Socks5 -> ProxyControl.ProxyType.PROXY_SOCKS_5
-            })
-            .addMitmproxyArgs(additionalParams)
-            .build()
-
-        try {
-            proxyControlService.createProxy(proxyConfig)
-        } catch (e: Exception) {
+    suspend fun createProxy(name: String, proxyType: ProxyType, port: Int, additionalParams: String): Result<String> {
+        val proxyParams = proxyParams {
+            this.name = name
+            this.type = when (proxyType) {
+                ProxyType.Https -> ProtoProxyType.PROXY_TYPE_HTTP
+                ProxyType.Socks5 -> ProtoProxyType.PROXY_TYPE_SOCKS5
+            }
+            this.port = port
+            this.extraCmdParams.addAll(additionalParams.split(" "))
+        }
+        return runCatching {
+            proxyControlService.createProxy(proxyParams).proxyId
+        }.onFailure { e ->
             logger.log(Level.SEVERE, "Failed to create proxy", e)
-            throw e
         }
     }
 
@@ -68,11 +55,7 @@ class ProxiesRepository(
         }
     }
 
-    suspend fun proxiesFlow(): Flow<ProxyManagementServiceOuterClass.ProxiesListState> {
-        return sharedProxiesStreamService.subscribeToProxies()
-    }
-    
-    suspend fun unsubscribeFromProxies() {
-        sharedProxiesStreamService.unsubscribeFromProxies()
+    fun proxiesFlow(): Flow<ProxiesList> {
+        return proxyControlService.proxiesListStream
     }
 }

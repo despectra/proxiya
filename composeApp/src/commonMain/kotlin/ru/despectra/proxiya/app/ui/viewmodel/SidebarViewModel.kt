@@ -8,8 +8,9 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import ru.despectra.proxiya.app.data.proxy.ProxiesRepository
-import ru.despectra.proxiya.proto.control.ProxyControl
-import ru.despectra.proxiya.proto.control.ProxyManagementServiceOuterClass.ProxiesListState
+import ru.despectra.proxiya.proto.proxy.ProcessState
+import ru.despectra.proxiya.proto.proxy.ProxyType
+import ru.despectra.proxiya.proto.service.control.ProxiesList
 import java.util.logging.Logger
 
 class SidebarViewModel(
@@ -42,29 +43,33 @@ class SidebarViewModel(
         _selectedProxyId.value = ""
     }
 
-    private fun ProxiesListState.toViewObject(): List<ProxyItemVo> {
-        return this.proxyInfoList.map { proxyInfo ->
-            logger.info("Proxy info: id = ${proxyInfo.proxyId}, name = ${proxyInfo.proxyName}")
+    private fun ProxiesList.toViewObject(): List<ProxyItemVo> {
+        return this.proxyInstanceList.map { proxyInfo ->
+            val params = proxyInfo.params
+            logger.info("Proxy info: id = ${proxyInfo.proxyId}, " +
+                    "name = ${params.name}, " +
+                    "process state = ${proxyInfo.processStatus.state}, " +
+                    "proxy state = ${proxyInfo.functionalityStatus.state}")
             ProxyItemVo(
                 id = proxyInfo.proxyId,
-                name = proxyInfo.proxyName,
-                type = when (proxyInfo.proxyType) {
-                    ProxyControl.ProxyType.PROXY_HTTPS -> "HTTPS"
-                    ProxyControl.ProxyType.PROXY_SOCKS_5 -> "SOCKS5"
-                    ProxyControl.ProxyType.UNRECOGNIZED -> "Unknown type"
+                name = params.name,
+                type = when (params.type) {
+                    ProxyType.PROXY_TYPE_HTTP -> "HTTPS"
+                    ProxyType.PROXY_TYPE_SOCKS5 -> "SOCKS5"
+                    // TODO other types
+                    else -> "Unsupported type"
                 },
-                port = proxyInfo.port.toString(),
-                status = when (proxyInfo.status) {
-                    ProxyControl.ProxyStatus.PROXY_STATUS_UNKNOWN,
-                    ProxyControl.ProxyStatus.PROXY_STATUS_STOPPED -> ProxyItemVo.Status.IDLE
+                port = params.port.toString(),
+                status = when (proxyInfo.processStatus.state) {
+                    ProcessState.PROCESS_STATE_STOPPED -> ProxyItemVo.Status.IDLE
 
-                    ProxyControl.ProxyStatus.PROXY_STATUS_RUNNING -> ProxyItemVo.Status.ACTIVE
+                    ProcessState.PROCESS_STATE_STARTING,
+                    ProcessState.PROCESS_STATE_STOPPING -> ProxyItemVo.Status.TRANSIENT
 
-                    ProxyControl.ProxyStatus.PROXY_STATUS_STARTING,
-                    ProxyControl.ProxyStatus.PROXY_STATUS_STOPPING -> ProxyItemVo.Status.TRANSIENT
+                    ProcessState.PROCESS_STATE_RUNNING -> ProxyItemVo.Status.ACTIVE
 
-                    ProxyControl.ProxyStatus.PROXY_STATUS_ERROR,
-                    ProxyControl.ProxyStatus.UNRECOGNIZED -> ProxyItemVo.Status.ERROR
+                    // TODO other types + ProxyState
+                    else -> ProxyItemVo.Status.ERROR
                 }
             )
         }

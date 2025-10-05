@@ -11,7 +11,6 @@ import org.koin.dsl.onClose
 import ru.despectra.proxiya.app.data.proxy.ProxiesRepository
 import ru.despectra.proxiya.app.data.settings.AppSettingsRepository
 import ru.despectra.proxiya.app.service.ProxyControlService
-import ru.despectra.proxiya.app.service.SharedProxiesStreamService
 import ru.despectra.proxiya.app.ui.viewmodel.AppNavigationViewModel
 import ru.despectra.proxiya.app.ui.viewmodel.CreateProxyViewModel
 import ru.despectra.proxiya.app.ui.viewmodel.ProxyMainViewModel
@@ -28,13 +27,14 @@ internal fun initDependencyInjectionContainer(): KoinApplication {
             // Services
             module {
                 single<ProxyControlService> {
-                    ProxyControlService().apply {
-                        initialize(host = "localhost", port = 50051)
+                    ProxyControlService(
+                        ProxyControlService.Config(
+                            host = "localhost",
+                            port = 50051,
+                        )
+                    ).apply {
+                        initialize()
                     }
-                } onClose { it?.close() }
-
-                single<SharedProxiesStreamService> {
-                    SharedProxiesStreamService(proxyControlService = get())
                 } onClose { it?.close() }
             },
 
@@ -43,7 +43,6 @@ internal fun initDependencyInjectionContainer(): KoinApplication {
                 factory<ProxiesRepository> {
                     ProxiesRepository(
                         proxyControlService = get(),
-                        sharedProxiesStreamService = get(),
                     )
                 }
 
