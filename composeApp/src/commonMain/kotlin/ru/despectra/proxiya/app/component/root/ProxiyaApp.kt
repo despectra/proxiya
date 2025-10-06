@@ -1,16 +1,20 @@
 package ru.despectra.proxiya.app.component.root
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeContentPadding
-import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.unit.dp
 import ru.despectra.proxiya.app.component.sidebar.Sidebar
 import ru.despectra.proxiya.app.ui.theme.ProxiyaTheme
@@ -22,18 +26,30 @@ fun ProxiyaApp(component: AppComponent) {
     val sidebarComponent = component.sidebarComponent
 
     ProxiyaTheme(themeMode = appTheme) {
-        Row(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
+                .background(color = MaterialTheme.colorScheme.surfaceContainerLow)
                 .safeContentPadding()
         ) {
             Sidebar(
                 component = sidebarComponent,
                 modifier = Modifier
-                    .widthIn(min = 180.dp, max = 240.dp)
+                    .width(240.dp)
                     .fillMaxHeight()
+                    .align(Alignment.TopStart)
             )
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .align(Alignment.TopStart)
+                    .padding(start = (240 - 16).dp)
+                    .shadow(elevation = 1.dp, shape = RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp))
+                    .background(color = MaterialTheme.colorScheme.background)
+            ) {
+
+            }
         }
     }
 }
