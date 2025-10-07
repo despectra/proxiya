@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import ru.despectra.proxiya.app.data.proxy.ProxiesRepository
 import ru.despectra.proxiya.app.data.proxy.ProxyType
-import ru.despectra.proxiya.app.ui.viewmodel.CreateProxyFormVo
+import ru.despectra.proxiya.app.ui.vo.CreateProxyFormVo
 import java.util.logging.Level
 import java.util.logging.Logger
 

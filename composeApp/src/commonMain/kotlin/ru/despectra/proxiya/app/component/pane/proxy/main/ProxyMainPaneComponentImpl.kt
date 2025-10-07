@@ -13,8 +13,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import ru.despectra.proxiya.app.data.proxy.ProxiesRepository
-import ru.despectra.proxiya.app.ui.viewmodel.ProxyItemVo
-import ru.despectra.proxiya.app.ui.viewmodel.ProxyState
+import ru.despectra.proxiya.app.ui.vo.ProxyItemVo
+import ru.despectra.proxiya.app.ui.vo.ProxyStateVo
 import ru.despectra.proxiya.proto.proxy.ProcessState
 import ru.despectra.proxiya.proto.proxy.paramsOrNull
 import java.util.logging.Level
@@ -29,10 +29,10 @@ class ProxyMainPaneComponentImpl(
     private val logger = Logger.getLogger(javaClass.simpleName)
     private val scope = coroutineScope()
 
-    private val _proxyState = MutableStateFlow<ProxyState>(ProxyState.Loading)
+    private val _proxyState = MutableStateFlow<ProxyStateVo>(ProxyStateVo.Loading)
     private val _isTransientState = MutableStateFlow(false)
 
-    override val proxyState: StateFlow<ProxyState> = _proxyState.asStateFlow()
+    override val proxyState: StateFlow<ProxyStateVo> = _proxyState.asStateFlow()
     override val isProxyInTransientState: StateFlow<Boolean> = _isTransientState.asStateFlow()
 
     init {
@@ -40,7 +40,7 @@ class ProxyMainPaneComponentImpl(
             .map { proxiesList ->
                 val proxyInstance = proxiesList.proxyInstanceList.find { it.proxyId == proxyId }
                 proxyInstance?.run {
-                    ProxyState.Loaded(
+                    ProxyStateVo.Loaded(
                         name = paramsOrNull?.name ?: " <Unknown proxy>",
                         type = paramsOrNull?.type?.name ?: "unknown",
                         port = paramsOrNull?.port.toString(),
@@ -59,7 +59,7 @@ class ProxyMainPaneComponentImpl(
                         },
                         processId = null
                     )
-                } ?: ProxyState.Error("Proxy with ID $proxyId not found")
+                } ?: ProxyStateVo.Error("Proxy with ID $proxyId not found")
             }
             .flowOn(Dispatchers.Default)
             .catch {
@@ -78,7 +78,7 @@ class ProxyMainPaneComponentImpl(
                 proxiesRepository.startProxy(proxyId)
             } catch (e: Exception) {
                 logger.log(Level.SEVERE, "Failed to start proxy", e)
-                _proxyState.value = ProxyState.Error(e.message ?: "Failed to start proxy")
+                _proxyState.value = ProxyStateVo.Error(e.message ?: "Failed to start proxy")
             } finally {
                 _isTransientState.value = false
             }
@@ -91,7 +91,7 @@ class ProxyMainPaneComponentImpl(
                 proxiesRepository.stopProxy(proxyId)
             } catch (e: Exception) {
                 logger.log(Level.SEVERE, "Failed to stop proxy", e)
-                _proxyState.value = ProxyState.Error(e.message ?: "Failed to stop proxy")
+                _proxyState.value = ProxyStateVo.Error(e.message ?: "Failed to stop proxy")
             }
         }
     }

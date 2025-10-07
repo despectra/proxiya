@@ -1,4 +1,4 @@
-package ru.despectra.proxiya.app.ui.component.settings
+package ru.despectra.proxiya.app.ui.kit.settings
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border

@@ -90,14 +90,14 @@ fun ProxiyaTheme(
         LightColorScheme
     }
 
-    val specialColorScheme = if (isDarkTheme) {
-        DarkSpecialColorScheme
+    val customColorScheme = if (isDarkTheme) {
+        DarkCustomColorScheme
     } else {
-        LightSpecialColorScheme
+        LightCustomColorScheme
     }
 
     CompositionLocalProvider(
-        LocalSpecialColors provides specialColorScheme,
+        LocalCustomColors provides customColorScheme,
         LocalCodeTypography provides CodeTypographyConfig
     ) {
         MaterialTheme(

@@ -21,7 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import ru.despectra.proxiya.app.ui.viewmodel.ProxyItemVo
+import ru.despectra.proxiya.app.ui.vo.ProxyItemVo
 
 @Composable
 fun Sidebar(component: SidebarComponent, modifier: Modifier = Modifier) {

@@ -24,8 +24,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import ru.despectra.proxiya.app.data.proxy.ProxyType
-import ru.despectra.proxiya.app.ui.theme.SpecialColors
-import ru.despectra.proxiya.app.ui.viewmodel.CreateProxyFormVo
+import ru.despectra.proxiya.app.ui.theme.ProxiyaCustomColors
+import ru.despectra.proxiya.app.ui.vo.CreateProxyFormVo
 
 @Composable
 fun CreateProxyForm(component: CreateProxyComponent) {
@@ -90,7 +90,7 @@ fun CreateProxyForm(component: CreateProxyComponent) {
                 Text(
                     text = "Proxy created successfully",
                     style = MaterialTheme.typography.bodySmall,
-                    color = SpecialColors.success,
+                    color = ProxiyaCustomColors.success,
                 )
             }
             is CreateProxyFormVo.SubmitResult.Error -> {

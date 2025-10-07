@@ -37,10 +37,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import ru.despectra.proxiya.app.data.settings.ThemeMode
+import ru.despectra.proxiya.app.ui.theme.ProxiyaCustomColors
 import ru.despectra.proxiya.app.ui.theme.ProxiyaTheme
-import ru.despectra.proxiya.app.ui.theme.SpecialColors
-import ru.despectra.proxiya.app.ui.viewmodel.ProxyItemVo
-import ru.despectra.proxiya.app.ui.viewmodel.ProxyState
+import ru.despectra.proxiya.app.ui.vo.ProxyItemVo
+import ru.despectra.proxiya.app.ui.vo.ProxyStateVo
 
 @Composable
 fun ProxyMainPane(component: ProxyMainPaneComponent) {
@@ -51,10 +51,10 @@ fun ProxyMainPane(component: ProxyMainPaneComponent) {
         modifier = Modifier.fillMaxSize()
     ) {
         when (val state = proxyState) {
-            is ProxyState.Loading -> {
+            is ProxyStateVo.Loading -> {
                 LoadingContent()
             }
-            is ProxyState.Loaded -> {
+            is ProxyStateVo.Loaded -> {
                 Header(
                     proxyName = state.name,
                     proxyType = state.type,
@@ -67,7 +67,7 @@ fun ProxyMainPane(component: ProxyMainPaneComponent) {
                 )
                 Content()
             }
-            is ProxyState.Error -> {
+            is ProxyStateVo.Error -> {
                 ErrorContent(
                     message = state.message,
                     onRetry = {}
@@ -232,7 +232,7 @@ private fun ProxyStatusBadge(
                 if (isInactive) {
                     border(
                         width = 1.dp,
-                        color = SpecialColors.proxyStatusInactive,
+                        color = ProxiyaCustomColors.proxyStatusInactive,
                         shape = RoundedCornerShape(12.dp),
                     )
                 } else {
@@ -241,9 +241,9 @@ private fun ProxyStatusBadge(
             }
             .background(
                 color = when (proxyStatus) {
-                    ProxyItemVo.Status.ACTIVE -> SpecialColors.proxyStatusRunning
-                    ProxyItemVo.Status.ERROR -> SpecialColors.proxyStatusError
-                    ProxyItemVo.Status.TRANSIENT -> SpecialColors.info
+                    ProxyItemVo.Status.ACTIVE -> ProxiyaCustomColors.proxyStatusRunning
+                    ProxyItemVo.Status.ERROR -> ProxiyaCustomColors.proxyStatusError
+                    ProxyItemVo.Status.TRANSIENT -> ProxiyaCustomColors.info
                     else -> Color.Transparent
                 }
             ),
@@ -284,9 +284,9 @@ fun ProxyMainScreenPreview() {
     ProxiyaTheme(themeMode = ThemeMode.DARK) {
         ProxyMainPane(
             component = object : ProxyMainPaneComponent {
-                override val proxyState: StateFlow<ProxyState>
+                override val proxyState: StateFlow<ProxyStateVo>
                     get() = MutableStateFlow(
-                        ProxyState.Loaded(
+                        ProxyStateVo.Loaded(
                             name = "Mobile iOS",
                             type = "HTTPS",
                             port = "8080",

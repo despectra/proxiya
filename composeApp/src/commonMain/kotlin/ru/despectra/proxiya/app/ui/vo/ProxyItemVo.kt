@@ -1,4 +1,4 @@
-package ru.despectra.proxiya.app.ui.viewmodel
+package ru.despectra.proxiya.app.ui.vo
 
 data class ProxyItemVo(
     val id: String,

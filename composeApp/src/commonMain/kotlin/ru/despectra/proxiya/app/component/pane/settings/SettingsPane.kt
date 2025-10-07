@@ -20,8 +20,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import ru.despectra.proxiya.app.data.settings.AppSettings
 import ru.despectra.proxiya.app.data.settings.ThemeMode
-import ru.despectra.proxiya.app.ui.component.settings.SettingsCard
-import ru.despectra.proxiya.app.ui.component.settings.SettingsSwitch
+import ru.despectra.proxiya.app.ui.kit.settings.SettingsCard
+import ru.despectra.proxiya.app.ui.kit.settings.SettingsSwitch
 
 @Composable
 fun SettingsPane(component: SettingsComponent) {

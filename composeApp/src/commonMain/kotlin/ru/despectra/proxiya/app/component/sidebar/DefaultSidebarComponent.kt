@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import ru.despectra.proxiya.app.data.proxy.ProxiesRepository
-import ru.despectra.proxiya.app.ui.viewmodel.toViewObject
+import ru.despectra.proxiya.app.ui.vo.toViewObject
 
 class DefaultSidebarComponent(
     val context: ComponentContext,

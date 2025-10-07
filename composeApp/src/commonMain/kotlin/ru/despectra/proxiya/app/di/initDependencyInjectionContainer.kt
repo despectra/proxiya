@@ -12,9 +12,6 @@ internal fun initDependencyInjectionContainer(): KoinApplication {
             servicesModules,
             repositoriesModules,
             componentsModule,
-
-            // TODO remove after integrating 'decompose'
-            viewModelsModule()
         )
     }
 }

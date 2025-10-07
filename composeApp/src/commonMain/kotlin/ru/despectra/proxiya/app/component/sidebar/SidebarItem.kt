@@ -1,6 +1,6 @@
 package ru.despectra.proxiya.app.component.sidebar
 
-import ru.despectra.proxiya.app.ui.viewmodel.ProxyItemVo
+import ru.despectra.proxiya.app.ui.vo.ProxyItemVo
 
 sealed interface SidebarItem {
     val id: String get() = javaClass.simpleName

@@ -1,4 +1,4 @@
-package ru.despectra.proxiya.app.ui.viewmodel
+package ru.despectra.proxiya.app.ui.vo
 
 import ru.despectra.proxiya.proto.proxy.ProcessState
 import ru.despectra.proxiya.proto.proxy.ProxyType

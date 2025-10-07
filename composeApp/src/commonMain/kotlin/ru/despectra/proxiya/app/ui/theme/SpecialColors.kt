@@ -8,7 +8,7 @@ import androidx.compose.ui.graphics.Color
 /**
  * Data class для хранения кастомных цветов
  */
-data class SpecialColorScheme(
+data class CustomColorScheme(
     val success: Color,
     val warning: Color,
     val info: Color,
@@ -22,7 +22,7 @@ data class SpecialColorScheme(
 /**
  * Кастомные цвета для светлой темы
  */
-val LightSpecialColorScheme = SpecialColorScheme(
+val LightCustomColorScheme = CustomColorScheme(
     success = Color(0xFF22AA11),
     warning = Color(0xFFFF8C00),
     info = Color(0xFF2196F3),
@@ -35,7 +35,7 @@ val LightSpecialColorScheme = SpecialColorScheme(
 /**
  * Кастомные цвета для темной темы
  */
-val DarkSpecialColorScheme = SpecialColorScheme(
+val DarkCustomColorScheme = CustomColorScheme(
     success = Color(0xFF4CAF50),
     warning = Color(0xFFFFB74D),
     info = Color(0xFF64B5F6),
@@ -48,10 +48,10 @@ val DarkSpecialColorScheme = SpecialColorScheme(
 /**
  * CompositionLocal для доступа к кастомным цветам в любом месте UI
  */
-val LocalSpecialColors = compositionLocalOf { LightSpecialColorScheme }
+val LocalCustomColors = compositionLocalOf { LightCustomColorScheme }
 
 /**
  * Composable для доступа к кастомным цветам
  */
-val SpecialColors: SpecialColorScheme
-    @Composable @ReadOnlyComposable get() = LocalSpecialColors.current
+val ProxiyaCustomColors: CustomColorScheme
+    @Composable @ReadOnlyComposable get() = LocalCustomColors.current

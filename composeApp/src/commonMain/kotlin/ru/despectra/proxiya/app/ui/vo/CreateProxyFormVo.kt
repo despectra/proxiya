@@ -1,4 +1,4 @@
-package ru.despectra.proxiya.app.ui.viewmodel
+package ru.despectra.proxiya.app.ui.vo
 
 import ru.despectra.proxiya.app.data.proxy.ProxyType
 
