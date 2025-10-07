@@ -10,4 +10,7 @@ sealed class PaneConfig {
 
     @Serializable
     data object SettingsPane : PaneConfig()
+
+    @Serializable
+    data class ProxyMainPane(val proxyId: String) : PaneConfig()
 }

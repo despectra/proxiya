@@ -1,7 +1,7 @@
 package ru.despectra.proxiya.app.component.sidebar
 
-import com.arkivanov.decompose.ComponentContext
 import kotlinx.coroutines.flow.Flow
+import ru.despectra.proxiya.app.component.ComponentFactory0
 
 interface SidebarComponent {
 
@@ -10,7 +10,5 @@ interface SidebarComponent {
 
     fun onSelectItem(item: SidebarItem)
 
-    interface Factory {
-        fun create(context: ComponentContext): SidebarComponent
-    }
+    interface Factory : ComponentFactory0<SidebarComponent>
 }

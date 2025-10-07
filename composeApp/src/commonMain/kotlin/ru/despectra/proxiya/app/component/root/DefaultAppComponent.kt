@@ -38,7 +38,7 @@ class DefaultAppComponent(
             .stateIn(scope, started = SharingStarted.Lazily, initialValue = ThemeMode.SYSTEM)
 
     override val sidebarComponent: SidebarComponent = sidebarComponentFactory.create(
-        context = childContext(key = "Sidebar")
+        componentContext = childContext(key = "Sidebar")
     )
 
     override val contentPane: Value<ChildSlot<*, PaneChild>> =
@@ -57,7 +57,8 @@ class DefaultAppComponent(
                 val paneConfig = when (sidebarItem) {
                     SidebarItem.CreateNewProxyItem -> PaneConfig.CreateProxyForm
                     SidebarItem.SettingsItem -> PaneConfig.SettingsPane
-                    is SidebarItem.ProxyItem -> null
+                    is SidebarItem.ProxyItem -> PaneConfig.ProxyMainPane(proxyId = sidebarItem.vo.id)
+
                     SidebarItem.SpringSpacerItem -> null
                 } ?: return@onEach
 
@@ -71,9 +72,9 @@ class DefaultAppComponent(
         private val sidebarComponentFactory: SidebarComponent.Factory,
         private val paneChildFactory: PaneChildFactory,
     ) : AppComponent.Factory {
-        override fun create(context: ComponentContext): AppComponent {
+        override fun create(componentContext: ComponentContext): AppComponent {
             return DefaultAppComponent(
-                context,
+                componentContext,
                 appSettingsRepository,
                 sidebarComponentFactory,
                 paneChildFactory,

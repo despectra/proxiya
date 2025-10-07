@@ -4,6 +4,8 @@ import org.koin.dsl.module
 import ru.despectra.proxiya.app.component.pane.PaneChildFactory
 import ru.despectra.proxiya.app.component.pane.proxy.create.CreateProxyComponent
 import ru.despectra.proxiya.app.component.pane.proxy.create.DefaultCreateProxyComponent
+import ru.despectra.proxiya.app.component.pane.proxy.main.ProxyMainPaneComponent
+import ru.despectra.proxiya.app.component.pane.proxy.main.ProxyMainPaneComponentImpl
 import ru.despectra.proxiya.app.component.pane.settings.DefaultSettingsComponent
 import ru.despectra.proxiya.app.component.pane.settings.SettingsComponent
 import ru.despectra.proxiya.app.component.root.AppComponent
@@ -30,6 +32,7 @@ val componentsModule = module {
         PaneChildFactory(
             createProxyComponentFactory = get(),
             settingsComponentFactory = get(),
+            proxyMainPaneComponentFactory = get(),
         )
     }
 
@@ -42,6 +45,12 @@ val componentsModule = module {
     factory<SettingsComponent.Factory> {
         DefaultSettingsComponent.Factory(
             appSettingsRepository = get(),
+        )
+    }
+
+    factory<ProxyMainPaneComponent.Factory> {
+        ProxyMainPaneComponentImpl.Factory(
+            proxiesRepository = get(),
         )
     }
 }

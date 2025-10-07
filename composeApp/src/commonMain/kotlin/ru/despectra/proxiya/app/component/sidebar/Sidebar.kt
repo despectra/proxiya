@@ -33,7 +33,7 @@ fun Sidebar(component: SidebarComponent, modifier: Modifier = Modifier) {
         modifier = modifier
     ) {
         sidebarItems.forEach { item ->
-            val isSelected = selectedItem == item
+            val isSelected = selectedItem.id == item.id
             val defaultOnClick = {
                 component.onSelectItem(item)
             }

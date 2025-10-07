@@ -1,12 +1,11 @@
 package ru.despectra.proxiya.app.component.pane.proxy.create
 
-import com.arkivanov.decompose.ComponentContext
 import kotlinx.coroutines.flow.StateFlow
-import ru.despectra.proxiya.app.component.pane.PaneComponent
+import ru.despectra.proxiya.app.component.ComponentFactory0
 import ru.despectra.proxiya.app.data.proxy.ProxyType
 import ru.despectra.proxiya.app.ui.viewmodel.CreateProxyFormVo
 
-interface CreateProxyComponent : PaneComponent {
+interface CreateProxyComponent {
     val formState: StateFlow<CreateProxyFormVo>
     val submitResultState: StateFlow<CreateProxyFormVo.SubmitResult>
 
@@ -16,7 +15,5 @@ interface CreateProxyComponent : PaneComponent {
     fun updateAdditionalParams(additionalParams: String)
     fun submit()
 
-    interface Factory {
-        fun create(componentContext: ComponentContext): CreateProxyComponent
-    }
+    interface Factory : ComponentFactory0<CreateProxyComponent>
 }

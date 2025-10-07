@@ -1,7 +1,7 @@
 package ru.despectra.proxiya.app.component.pane.settings
 
-import com.arkivanov.decompose.ComponentContext
 import kotlinx.coroutines.flow.StateFlow
+import ru.despectra.proxiya.app.component.ComponentFactory0
 import ru.despectra.proxiya.app.data.settings.AppSettings
 import ru.despectra.proxiya.app.data.settings.ThemeMode
 
@@ -12,7 +12,5 @@ interface SettingsComponent {
     fun updateTheme(theme: ThemeMode)
     fun updateAutoStartProxies(autoStartProxies: Boolean)
 
-    interface Factory {
-        fun create(componentContext: ComponentContext): SettingsComponent
-    }
+    interface Factory : ComponentFactory0<SettingsComponent>
 }

@@ -20,7 +20,7 @@ class DefaultSidebarComponent(
 
     private val scope = coroutineScope()
 
-    private val _selectedSidebarItems = MutableStateFlow<SidebarItem>(SidebarItem.CreateNewProxyItem)
+    private val _selectedSidebarItem = MutableStateFlow<SidebarItem>(SidebarItem.CreateNewProxyItem)
 
     override val sidebarItems: Flow<List<SidebarItem>> = proxiesRepository
         .proxiesFlow()
@@ -39,18 +39,18 @@ class DefaultSidebarComponent(
         .flowOn(Dispatchers.Default)
         .stateIn(scope, SharingStarted.Lazily, initialValue = emptyList())
 
-    override val selectedSidebarItem: Flow<SidebarItem> = _selectedSidebarItems.asStateFlow()
+    override val selectedSidebarItem: Flow<SidebarItem> = _selectedSidebarItem.asStateFlow()
 
     override fun onSelectItem(item: SidebarItem) {
-        _selectedSidebarItems.value = item
+        _selectedSidebarItem.value = item
     }
 
     class Factory(
         private val proxiesRepository: ProxiesRepository,
     ) : SidebarComponent.Factory {
-        override fun create(context: ComponentContext): SidebarComponent {
+        override fun create(componentContext: ComponentContext): SidebarComponent {
             return DefaultSidebarComponent(
-                context,
+                componentContext,
                 proxiesRepository
             )
         }

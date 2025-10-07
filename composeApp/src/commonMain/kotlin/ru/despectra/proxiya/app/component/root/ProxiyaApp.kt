@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import com.arkivanov.decompose.extensions.compose.subscribeAsState
 import ru.despectra.proxiya.app.component.pane.PaneChild
 import ru.despectra.proxiya.app.component.pane.proxy.create.CreateProxyForm
+import ru.despectra.proxiya.app.component.pane.proxy.main.ProxyMainPane
 import ru.despectra.proxiya.app.component.pane.settings.SettingsPane
 import ru.despectra.proxiya.app.component.sidebar.Sidebar
 import ru.despectra.proxiya.app.ui.theme.ProxiyaTheme
@@ -57,6 +58,7 @@ fun ProxiyaApp(component: AppComponent) {
                     when (it) {
                         is PaneChild.CreateProxyFormChild -> CreateProxyForm(it.component)
                         is PaneChild.SettingsPaneChild -> SettingsPane(it.component)
+                        is PaneChild.ProxyMainPaneChild -> ProxyMainPane(it.component)
                     }
                 }
             }
