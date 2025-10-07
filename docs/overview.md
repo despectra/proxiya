@@ -62,16 +62,16 @@ Proxiya - это современный и удобный UI-клиент для
 
 Части системы:
 
-- Desktop-приложение на Compose Multiplatform (UI)
-- Приложение-контроллер проксей - уровень абстракции над mitmproxy (а потенциально и над любым прокси-тулом) - менеджерит интансы проксей mitmproxy, пропускает через себя запросы-ответы
-- Аддон для mitmproxy, запускаемый для инстанса mitmproxy и взаимодействующий с контроллером
+- **Desktop-приложение на Compose Multiplatform** - десктопное приложение на Compose Multiplatform, построенное на базе архитектуры Decompose
+- **Контроллер проксей** - JVM-приложение на Kotlin для управления инстансами прокси, является уровнем абстракции над mitmproxy (и потенциально над любым другим консольным/API прокси-сниффером)
+- **Python-аддон для mitmproxy** - запускается для инстанса mitmproxy и пересылает перехваченный трафик в контроллер
 
 #### Коммуникация
 
 Взаимодействие между частями строится на базе протокола gRPC:
-- UI общается с контроллером по gRPC
-- Контроллер общается с запущенными прокси посредством аддонов - по gRPC
-- Единый набор протобуф-файлов для общих сущностей - HTTP-запрос, HTTP-ответ, прокси-конфигурация
+- **UI ↔ Контроллер** - gRPC API для управления прокси
+- **Контроллер ↔ mitmproxy** - gRPC API для получения трафика
+- **Единые протоколы** - общие protobuf-сообщения для HTTP-запросов/ответов, сущностей и параметров проксей
 
 ##### Каналы связи:
 
@@ -86,25 +86,26 @@ Proxiya - это современный и удобный UI-клиент для
 - `Controller → ProxyControlService → UI` - обновления статуса в реальном времени
 
 ##### gRPC сервисы:
-- **ProxyControlService** - управление прокси для UI
-- **ProxyDataService** - стриминг данных для UI  
-- **ProxyInstanceControlService** - уведомления от прокси-инстансов
+- **ProxyControlService** - управление прокси для UI (создание, запуск, остановка etc.)
+- **ProxyDataService** - стриминг данных для UI (перехваченный трафик)
+- **ProxyInstanceControlService** - уведомления от прокси-инстансов (статус, ошибки)
 - **ProxyInstanceDataService** - передача трафика от прокси-инстансов
 
 ### Технологии
 
-- UI
-    - Kotlin
-    - Compose multiplatform
-    - gRPC
-    - Protobuf
+- **UI (composeApp)**
+    - Kotlin + Compose Multiplatform
+    - Decompose (архитектура компонентов, навигация)
+    - Koin (dependency injection)
+    - gRPC + Protobuf (jvmMain)
     - Kotlin coroutines/flow
-- Контроллер
-    - Kotlin
-    - gRPC
-    - Protobuf
+    - Material Design 3
+- **Контроллер**
+    - Kotlin + JVM
+    - gRPC + Protobuf
     - Kotlin coroutines/flow
-- Аддон
-    - Python3
-    - asyncio
-    - gRPC, Protobuf
+    - Управление процессами mitmproxy
+- **Аддон (mitmproxy)**
+    - Python3 + asyncio
+    - gRPC + Protobuf
+    - Интеграция с mitmproxy API

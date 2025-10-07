@@ -14,58 +14,94 @@ globs: composeApp/**/*.kt
 
 ### 1. Структура пакетов
 ```
-ru.despectra.proxiya.app.ui/
-├── screen/          # Экраны приложения
-├── component/       # Переиспользуемые компоненты
-├── theme/          # Тема и стили
-├── navigation/     # Навигация
-└── examples/       # Примеры использования
+ru.despectra.proxiya.app/
+├── component/       # Компоненты архитектуры (Decompose)
+│   ├── root/       # Корневой компонент приложения
+│   ├── sidebar/    # Боковая панель навигации
+│   └── pane/       # Панели контента (экраны)
+├── data/           # Модели данных и репозитории
+├── di/             # Dependency Injection (Koin)
+├── service/        # gRPC сервисы и API
+├── ui/             # UI компоненты и тема
+│   ├── theme/      # Тема и стили
+│   ├── kit/        # Переиспользуемые UI компоненты
+│   └── vo/         # View Objects для UI
+└── utils/          # Утилиты
 ```
 
-### 2. Naming Conventions
-- **Экраны**: `*Screen.kt` (например, `ProxyMainScreen.kt`)
-- **Компоненты**: `*Component.kt` или `*Button.kt`
-- **Темы**: `*Theme.kt`
+### 2. Архитектурный паттерн
+Приложение использует **Decompose** для навигации и управления состоянием:
+- **Component** - интерфейсы для логики экранов
+- **Router** - управление навигацией между экранами
+- **Child Slot** - система панелей с переключением контента
 
-### 3. Material Design 3
+### 3. Naming Conventions
+- **Компоненты**: `*Component.kt` (интерфейс), `Default*Component.kt` (реализация)
+- **Панели**: `*Pane.kt` (Compose UI)
+- **Фабрики**: `*Factory.kt` для создания компонентов
+- **Сервисы**: `*Service.kt` для gRPC и API
+- **Репозитории**: `*Repository.kt` для работы с данными
+
+### 4. Material Design 3
 - Используем `MaterialTheme.colorScheme` для цветов
 - Применяем `MaterialTheme.typography` для текста
 - Следуем Material Design 3 принципам
+- Поддержка темной/светлой темы
 
-### 4. Состояние и ViewModel
-- Используем Koin для DI
-- ViewModel через `koin-compose-viewmodel`
-- Состояние через `androidx.lifecycle.viewmodelCompose`
+### 5. Dependency Injection
+- Используем **Koin** для DI
+- Модули разделены по функциональности:
+  - `ComponentsModule` - компоненты Decompose
+  - `ServicesModules` - gRPC сервисы
+  - `RepositoriesModule` - репозитории данных
 
-### 5. Иконки
+### 6. Иконки
 - Используем compose-icons библиотеку
 - Предпочитаем Feather Icons для UI
 - Всегда указываем contentDescription
 
 ## Примеры структуры
 
-### Экраны
+### Компоненты Decompose
 ```kotlin
-@Composable
-fun ProxyMainScreen(modifier: Modifier = Modifier) {
-    // Основной контент экрана
+interface ProxyMainPaneComponent {
+    val proxyList: Flow<List<ProxyItemVo>>
+    fun onProxyAction(proxyId: String, action: ProxyAction)
+    
+    interface Factory : ComponentFactory0<ProxyMainPaneComponent>
 }
 
-@Composable
-private fun Header(modifier: Modifier = Modifier) {
-    // Приватные компоненты экрана
+class ProxyMainPaneComponentImpl(
+    private val proxiesRepository: ProxiesRepository
+) : ProxyMainPaneComponent {
+    // Реализация логики компонента
 }
 ```
 
-### Компоненты
+### UI Панели
 ```kotlin
 @Composable
-fun ProxyCard(
-    proxy: Proxy,
-    onStopClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    // Переиспользуемый компонент
+fun ProxyMainPane(component: ProxyMainPaneComponent) {
+    val proxyList by component.proxyList.collectAsState()
+    
+    LazyColumn {
+        items(proxyList) { proxy ->
+            ProxyItemCard(
+                proxy = proxy,
+                onAction = { action -> component.onProxyAction(proxy.id, action) }
+            )
+        }
+    }
+}
+```
+
+### gRPC Сервисы
+```kotlin
+class ProxyControlService(config: Config) : GrpcServiceWrapper<ProxyControlServiceCoroutineStub>() {
+    suspend fun createProxy(proxyParams: ProxyParams): CreateProxyResult
+    suspend fun startProxy(proxyId: String)
+    suspend fun stopProxy(proxyId: String)
+    val proxiesListStream: Flow<ProxiesList>
 }
 ```
 
@@ -73,11 +109,22 @@ fun ProxyCard(
 Основные зависимости в [composeApp/build.gradle.kts](mdc:composeApp/build.gradle.kts):
 - `compose.material3` - Material Design 3
 - `compose.components.resources` - Ресурсы
-- `koin.compose` - DI для Compose
+- `decompose.core` - Архитектура компонентов
+- `decompose.ext.compose` - Compose интеграция
+- `koin.core` + `koin.compose` - DI
 - `compose-icons.*` - Иконки
+- `grpc.netty` + `grpc.kotlin.stub` - gRPC (jvmMain)
+- `protobuf.kotlin` - Protobuf (jvmMain)
 
 ## Связь с контроллером
 UI модуль взаимодействует с контроллером через:
-- gRPC API (в jvmMain)
-- Общие протоколы из модуля `protocols`
-- ViewModel для управления состоянием
+- **gRPC API** - `ProxyControlService` для управления прокси
+- **Общие протоколы** из модуля `protocols`
+- **Repository паттерн** - `ProxiesRepository` для работы с данными
+- **Reactive streams** - Flow для получения обновлений в реальном времени
+
+## Навигация
+Навигация реализована через Decompose Router:
+- **Sidebar** - список прокси и настройки
+- **Content Pane** - основной контент (список прокси, создание, настройки)
+- **Child Slot** - переключение между панелями без пересоздания компонентов
