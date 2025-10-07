@@ -16,6 +16,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.unit.dp
+import com.arkivanov.decompose.extensions.compose.subscribeAsState
+import ru.despectra.proxiya.app.component.pane.proxy.create.CreateProxyForm
 import ru.despectra.proxiya.app.component.sidebar.Sidebar
 import ru.despectra.proxiya.app.ui.theme.ProxiyaTheme
 
@@ -24,6 +26,7 @@ fun ProxiyaApp(component: AppComponent) {
 
     val appTheme by component.appTheme.collectAsState()
     val sidebarComponent = component.sidebarComponent
+    val contentPane by component.contentPane.subscribeAsState()
 
     ProxiyaTheme(themeMode = appTheme) {
         Box(
@@ -48,7 +51,11 @@ fun ProxiyaApp(component: AppComponent) {
                     .shadow(elevation = 1.dp, shape = RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp))
                     .background(color = MaterialTheme.colorScheme.background)
             ) {
-
+                contentPane.child?.instance?.let {
+                    when (it) {
+                        is AppComponent.PaneChild.CreateProxyChild -> CreateProxyForm(it.component)
+                    }
+                }
             }
         }
     }

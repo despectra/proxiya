@@ -1,6 +1,8 @@
 package ru.despectra.proxiya.app.di
 
 import org.koin.dsl.module
+import ru.despectra.proxiya.app.component.pane.proxy.create.CreateProxyComponent
+import ru.despectra.proxiya.app.component.pane.proxy.create.DefaultCreateProxyComponent
 import ru.despectra.proxiya.app.component.root.AppComponent
 import ru.despectra.proxiya.app.component.root.DefaultAppComponent
 import ru.despectra.proxiya.app.component.sidebar.DefaultSidebarComponent
@@ -11,11 +13,18 @@ val componentsModule = module {
         DefaultAppComponent.Factory(
             appSettingsRepository = get(),
             sidebarComponentFactory = get(),
+            createProxyComponentFactory = get()
         )
     }
 
     factory<SidebarComponent.Factory> {
         DefaultSidebarComponent.Factory(
+            proxiesRepository = get(),
+        )
+    }
+
+    factory<CreateProxyComponent.Factory> {
+        DefaultCreateProxyComponent.Factory(
             proxiesRepository = get(),
         )
     }
