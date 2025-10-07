@@ -14,9 +14,9 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.serialization.Serializable
-import ru.despectra.proxiya.app.component.pane.proxy.create.CreateProxyComponent
-import ru.despectra.proxiya.app.component.root.AppComponent.PaneChild
+import ru.despectra.proxiya.app.component.pane.PaneChild
+import ru.despectra.proxiya.app.component.pane.PaneChildFactory
+import ru.despectra.proxiya.app.component.pane.PaneConfig
 import ru.despectra.proxiya.app.component.sidebar.SidebarComponent
 import ru.despectra.proxiya.app.component.sidebar.SidebarItem
 import ru.despectra.proxiya.app.data.settings.AppSettingsRepository
@@ -26,7 +26,7 @@ class DefaultAppComponent(
     private val componentContext: ComponentContext,
     private val appSettingsRepository: AppSettingsRepository,
     sidebarComponentFactory: SidebarComponent.Factory,
-    private val createProxyComponentFactory: CreateProxyComponent.Factory,
+    private val paneChildFactory: PaneChildFactory,
 ) : AppComponent, ComponentContext by componentContext {
 
     private val scope = coroutineScope()
@@ -48,7 +48,7 @@ class DefaultAppComponent(
             initialConfiguration = { PaneConfig.CreateProxyForm },
             handleBackButton = false,
             key = "ContentPane",
-            childFactory = ::createPaneChild,
+            childFactory = paneChildFactory::create,
         )
 
     init {
@@ -56,8 +56,8 @@ class DefaultAppComponent(
             .onEach { sidebarItem ->
                 val paneConfig = when (sidebarItem) {
                     SidebarItem.CreateNewProxyItem -> PaneConfig.CreateProxyForm
+                    SidebarItem.SettingsItem -> PaneConfig.SettingsPane
                     is SidebarItem.ProxyItem -> null
-                    SidebarItem.SettingsItem -> null
                     SidebarItem.SpringSpacerItem -> null
                 } ?: return@onEach
 
@@ -66,37 +66,17 @@ class DefaultAppComponent(
             .launchIn(scope)
     }
 
-    private fun createPaneChild(
-        config: PaneConfig,
-        childContext: ComponentContext,
-    ): PaneChild {
-        return when(config) {
-            is PaneConfig.CreateProxyForm -> {
-                PaneChild.CreateProxyChild(
-                    createProxyComponentFactory.create(childContext)
-                )
-            }
-        }
-    }
-
-    @Serializable
-    private sealed class PaneConfig {
-
-        @Serializable
-        data object CreateProxyForm : PaneConfig()
-    }
-
     class Factory(
         private val appSettingsRepository: AppSettingsRepository,
         private val sidebarComponentFactory: SidebarComponent.Factory,
-        private val createProxyComponentFactory: CreateProxyComponent.Factory,
+        private val paneChildFactory: PaneChildFactory,
     ) : AppComponent.Factory {
         override fun create(context: ComponentContext): AppComponent {
             return DefaultAppComponent(
                 context,
                 appSettingsRepository,
                 sidebarComponentFactory,
-                createProxyComponentFactory,
+                paneChildFactory,
             )
         }
     }
