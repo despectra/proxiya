@@ -26,6 +26,8 @@ data class CustomColorScheme(
     val proxyStatusInactive: Color,
     val proxyStatusRunning: Color,
     val proxyStatusError: Color,
+
+    val sidebarSelectedBackground: Color,
 )
 
 /**
@@ -49,6 +51,8 @@ val LightCustomColorScheme = CustomColorScheme(
     proxyStatusInactive = Color(0xFF006874),
     proxyStatusRunning = Color(0xFF48672E),
     proxyStatusError = Color(0xFF904A41),
+
+    sidebarSelectedBackground = LightColorScheme.primary.copy(alpha = 0.28f)
 )
 
 /**
@@ -72,6 +76,8 @@ val DarkCustomColorScheme = CustomColorScheme(
     proxyStatusInactive = Color(0xFF82D3E0),
     proxyStatusRunning = Color(0xFFAED18D),
     proxyStatusError = Color(0xFFFFB4A9),
+
+    sidebarSelectedBackground = DarkColorScheme.primary.copy(alpha = 0.24f),
 )
 
 /**

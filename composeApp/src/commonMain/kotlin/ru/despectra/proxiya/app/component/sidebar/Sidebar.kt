@@ -21,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import ru.despectra.proxiya.app.ui.theme.ProxiyaCustomColors
 import ru.despectra.proxiya.app.ui.vo.ProxyItemVo
 
 @Composable
@@ -74,11 +75,7 @@ private fun SidebarProxyItem(
             .fillMaxWidth()
             .height(56.dp) // Увеличиваем высоту для двух строк
             .background(
-                color = if (isSelected) {
-                    MaterialTheme.colorScheme.primaryContainer
-                } else {
-                    Color.Transparent
-                }
+                color = itemBackground(isSelected)
             )
             .clickable {
                 onClick()
@@ -109,7 +106,7 @@ private fun SidebarProxyItem(
                 color = if (isSelected) {
                     MaterialTheme.colorScheme.onPrimaryContainer
                 } else {
-                    MaterialTheme.colorScheme.onSurface
+                    MaterialTheme.colorScheme.onBackground
                 },
                 text = proxyItemVo.name,
                 style = MaterialTheme.typography.bodyLarge
@@ -120,7 +117,7 @@ private fun SidebarProxyItem(
                 color = if (isSelected) {
                     MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
                 } else {
-                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
                 },
                 text = "${proxyItemVo.type} :${proxyItemVo.port}",
                 style = MaterialTheme.typography.bodySmall
@@ -144,11 +141,7 @@ private fun SidebarItem(
                 onClick()
             }
             .background(
-                color = if (isSelected) {
-                    MaterialTheme.colorScheme.primaryContainer
-                } else {
-                    Color.Transparent
-                }
+                color = itemBackground(isSelected)
             ),
         contentAlignment = Alignment.CenterStart,
     ) {
@@ -157,10 +150,19 @@ private fun SidebarItem(
             color = if (isSelected) {
                 MaterialTheme.colorScheme.onPrimaryContainer
             } else {
-                MaterialTheme.colorScheme.onSurface
+                MaterialTheme.colorScheme.onBackground
             },
             text = title,
             style = MaterialTheme.typography.bodyLarge,
         )
+    }
+}
+
+@Composable
+private fun itemBackground(isSelected: Boolean): Color {
+    return if (isSelected) {
+        ProxiyaCustomColors.sidebarSelectedBackground
+    } else {
+        Color.Transparent
     }
 }
