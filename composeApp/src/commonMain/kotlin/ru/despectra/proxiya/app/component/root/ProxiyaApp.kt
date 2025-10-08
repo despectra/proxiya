@@ -35,7 +35,7 @@ fun ProxiyaApp(component: AppComponent) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(color = MaterialTheme.colorScheme.surfaceContainerLow)
+                .background(color = MaterialTheme.colorScheme.background)
                 .safeContentPadding()
         ) {
             Sidebar(
@@ -52,7 +52,7 @@ fun ProxiyaApp(component: AppComponent) {
                     .align(Alignment.TopStart)
                     .padding(start = (240 - 16).dp)
                     .shadow(elevation = 1.dp, shape = RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp))
-                    .background(color = MaterialTheme.colorScheme.background)
+                    .background(color = MaterialTheme.colorScheme.surface)
             ) {
                 contentPane.child?.instance?.let {
                     when (it) {

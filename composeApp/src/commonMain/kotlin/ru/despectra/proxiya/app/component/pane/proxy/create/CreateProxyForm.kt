@@ -41,7 +41,7 @@ fun CreateProxyForm(component: CreateProxyComponent) {
         Text(
             text = "Create new proxy",
             style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.onBackground,
+            color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.padding(bottom = 32.dp),
         )
 
@@ -121,7 +121,7 @@ fun ProxyTypeSelector(
             modifier = Modifier.padding(end = 12.dp),
             text = "Proxy type",
             style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onBackground,
+            color = MaterialTheme.colorScheme.onSurface,
         )
         SingleChoiceSegmentedButtonRow(
             modifier = Modifier.fillMaxWidth(),

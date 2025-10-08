@@ -37,7 +37,7 @@ fun SettingsPane(component: SettingsComponent) {
         Text(
             text = "Settings",
             style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.onBackground
+            color = MaterialTheme.colorScheme.onSurface
         )
         
         AppearanceSettings(
