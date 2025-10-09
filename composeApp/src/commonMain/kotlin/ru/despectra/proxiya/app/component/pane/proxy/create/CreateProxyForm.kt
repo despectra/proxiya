@@ -23,6 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import ru.despectra.proxiya.app.component.pane.MaterialPane
 import ru.despectra.proxiya.app.data.proxy.ProxyType
 import ru.despectra.proxiya.app.ui.theme.ProxiyaCustomColors
 import ru.despectra.proxiya.app.ui.vo.CreateProxyFormVo
@@ -32,79 +33,80 @@ fun CreateProxyForm(component: CreateProxyComponent) {
     val formState by component.formState.collectAsState()
     val submitResultState by component.submitResultState.collectAsState()
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text(
-            text = "Create new proxy",
-            style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(bottom = 32.dp),
-        )
-
-        ProxyTypeSelector(
-            proxyType = formState.proxyType,
-            onProxyTypeSelected = component::updateProxyType,
-            modifier = Modifier.widthIn(min = 320.dp, max = 480.dp),
-        )
-
-        OutlinedTextField(
-            value = formState.name,
-            onValueChange = component::updateName,
-            label = { Text("Name") },
-            modifier = Modifier.widthIn(min = 480.dp, max = 720.dp).padding(top = 16.dp),
-            singleLine = true,
-        )
-
-        OutlinedTextField(
-            value = formState.port,
-            onValueChange = component::updatePort,
-            label = { Text("Port") },
-            modifier = Modifier.widthIn(min = 480.dp, max = 720.dp).padding(top = 16.dp),
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-        )
-
-        OutlinedTextField(
-            value = formState.additionalParams,
-            onValueChange = component::updateAdditionalParams,
-            label = { Text("Additional params (mitmproxy)") },
-            modifier = Modifier.widthIn(min = 480.dp, max = 720.dp).padding(top = 16.dp),
-        )
-
-        Button(
-            onClick = component::submit,
-            modifier = Modifier.widthIn(min = 120.dp).padding(top = 16.dp),
-            enabled = submitResultState != CreateProxyFormVo.SubmitResult.InProgress,
+    MaterialPane(isolated = false) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text("Create")
-        }
+            Text(
+                text = "Create new proxy",
+                style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(bottom = 32.dp),
+            )
 
-        Spacer(modifier = Modifier.height(16.dp))
+            ProxyTypeSelector(
+                proxyType = formState.proxyType,
+                onProxyTypeSelected = component::updateProxyType,
+                modifier = Modifier.widthIn(min = 320.dp, max = 480.dp),
+            )
 
-        when (val result = submitResultState) {
-            CreateProxyFormVo.SubmitResult.Success -> {
-                Text(
-                    text = "Proxy created successfully",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = ProxiyaCustomColors.success,
-                )
+            OutlinedTextField(
+                value = formState.name,
+                onValueChange = component::updateName,
+                label = { Text("Name") },
+                modifier = Modifier.widthIn(min = 480.dp, max = 720.dp).padding(top = 16.dp),
+                singleLine = true,
+            )
+
+            OutlinedTextField(
+                value = formState.port,
+                onValueChange = component::updatePort,
+                label = { Text("Port") },
+                modifier = Modifier.widthIn(min = 480.dp, max = 720.dp).padding(top = 16.dp),
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+            )
+
+            OutlinedTextField(
+                value = formState.additionalParams,
+                onValueChange = component::updateAdditionalParams,
+                label = { Text("Additional params (mitmproxy)") },
+                modifier = Modifier.widthIn(min = 480.dp, max = 720.dp).padding(top = 16.dp),
+            )
+
+            Button(
+                onClick = component::submit,
+                modifier = Modifier.widthIn(min = 120.dp).padding(top = 16.dp),
+                enabled = submitResultState != CreateProxyFormVo.SubmitResult.InProgress,
+            ) {
+                Text("Create")
             }
-            is CreateProxyFormVo.SubmitResult.Error -> {
-                Text(
-                    text = result.message,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error,
-                )
-            }
-            else -> {
-                // Nothing
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            when (val result = submitResultState) {
+                CreateProxyFormVo.SubmitResult.Success -> {
+                    Text(
+                        text = "Proxy created successfully",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = ProxiyaCustomColors.success,
+                    )
+                }
+                is CreateProxyFormVo.SubmitResult.Error -> {
+                    Text(
+                        text = result.message,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+                else -> {
+                    // Nothing
+                }
             }
         }
     }
+
 }
 
 @Composable

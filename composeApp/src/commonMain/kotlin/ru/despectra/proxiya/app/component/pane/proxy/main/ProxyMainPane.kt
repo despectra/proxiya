@@ -36,6 +36,7 @@ import compose.icons.feathericons.Power
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import org.jetbrains.compose.ui.tooling.preview.Preview
+import ru.despectra.proxiya.app.component.pane.MaterialPane
 import ru.despectra.proxiya.app.data.settings.ThemeMode
 import ru.despectra.proxiya.app.ui.theme.ProxiyaCustomColors
 import ru.despectra.proxiya.app.ui.theme.ProxiyaTheme
@@ -47,31 +48,33 @@ fun ProxyMainPane(component: ProxyMainPaneComponent) {
     val proxyState by component.proxyState.collectAsState()
     val isInTransientState by component.isProxyInTransientState.collectAsState()
 
-    Column(
-        modifier = Modifier.fillMaxSize()
-    ) {
-        when (val state = proxyState) {
-            is ProxyStateVo.Loading -> {
-                LoadingContent()
-            }
-            is ProxyStateVo.Loaded -> {
-                Header(
-                    proxyName = state.name,
-                    proxyType = state.type,
-                    proxyPort = state.port,
-                    proxyStatus = state.status,
-                    proxyProcessId = state.processId,
-                    isLoading = isInTransientState,
-                    onStartClick = component::startProxy,
-                    onStopClick = component::stopProxy
-                )
-                Content()
-            }
-            is ProxyStateVo.Error -> {
-                ErrorContent(
-                    message = state.message,
-                    onRetry = {}
-                )
+    MaterialPane(isolated = false) {
+        Column(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            when (val state = proxyState) {
+                is ProxyStateVo.Loading -> {
+                    LoadingContent()
+                }
+                is ProxyStateVo.Loaded -> {
+                    Header(
+                        proxyName = state.name,
+                        proxyType = state.type,
+                        proxyPort = state.port,
+                        proxyStatus = state.status,
+                        proxyProcessId = state.processId,
+                        isLoading = isInTransientState,
+                        onStartClick = component::startProxy,
+                        onStopClick = component::stopProxy
+                    )
+                    Content()
+                }
+                is ProxyStateVo.Error -> {
+                    ErrorContent(
+                        message = state.message,
+                        onRetry = {}
+                    )
+                }
             }
         }
     }
@@ -269,7 +272,6 @@ private fun Content(modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surfaceVariant)
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,

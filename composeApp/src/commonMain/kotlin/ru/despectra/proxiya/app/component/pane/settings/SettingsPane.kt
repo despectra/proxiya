@@ -18,6 +18,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import ru.despectra.proxiya.app.component.pane.MaterialPane
 import ru.despectra.proxiya.app.data.settings.AppSettings
 import ru.despectra.proxiya.app.data.settings.ThemeMode
 import ru.despectra.proxiya.app.ui.kit.settings.SettingsCard
@@ -26,29 +27,31 @@ import ru.despectra.proxiya.app.ui.kit.settings.SettingsSwitch
 @Composable
 fun SettingsPane(component: SettingsComponent) {
     val settings by component.appSettings.collectAsState()
-    
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        Text(
-            text = "Settings",
-            style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-        
-        AppearanceSettings(
-            settings = settings,
-            onThemeChange = component::updateTheme
-        )
-        
-        ProxySettings(
-            settings = settings,
-            onAutoStartChange = component::updateAutoStartProxies
-        )
+
+    MaterialPane(isolated = false) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Text(
+                text = "Settings",
+                style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            AppearanceSettings(
+                settings = settings,
+                onThemeChange = component::updateTheme
+            )
+
+            ProxySettings(
+                settings = settings,
+                onAutoStartChange = component::updateAutoStartProxies
+            )
+        }
     }
 }
 
