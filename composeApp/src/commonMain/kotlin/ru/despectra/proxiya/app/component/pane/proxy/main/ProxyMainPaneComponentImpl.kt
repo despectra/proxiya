@@ -4,6 +4,7 @@ import com.arkivanov.decompose.ComponentContext
 import com.arkivanov.essenty.lifecycle.coroutines.coroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
@@ -11,12 +12,17 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import ru.despectra.proxiya.app.data.proxy.ProxiesRepository
-import ru.despectra.proxiya.app.ui.vo.ProxyItemVo
-import ru.despectra.proxiya.app.ui.vo.ProxyStateVo
+import ru.despectra.proxiya.app.ui.vo.ProxyHeaderVo
 import ru.despectra.proxiya.proto.proxy.ProcessState
-import ru.despectra.proxiya.proto.proxy.paramsOrNull
+import ru.despectra.proxiya.proto.proxy.ProcessStatus
+import ru.despectra.proxiya.proto.proxy.ProxyInstance
+import ru.despectra.proxiya.proto.proxy.ProxyParams
+import ru.despectra.proxiya.proto.proxy.ProxyState
+import ru.despectra.proxiya.proto.proxy.ProxyType
+import ru.despectra.proxiya.proto.proxy.processStatusOrNull
 import java.util.logging.Level
 import java.util.logging.Logger
 
@@ -29,69 +35,55 @@ class ProxyMainPaneComponentImpl(
     private val logger = Logger.getLogger(javaClass.simpleName)
     private val scope = coroutineScope()
 
-    private val _proxyState = MutableStateFlow<ProxyStateVo>(ProxyStateVo.Loading)
-    private val _isTransientState = MutableStateFlow(false)
+    private val _proxyHeader = MutableStateFlow(ProxyHeaderVo.init)
 
-    override val proxyState: StateFlow<ProxyStateVo> = _proxyState.asStateFlow()
-    override val isProxyInTransientState: StateFlow<Boolean> = _isTransientState.asStateFlow()
+    private val currentProxy = proxiesRepository.proxiesFlow()
+        .map { proxiesList ->
+            proxiesList.proxyInstanceList.find { it.proxyId == proxyId }
+        }
+        .stateIn(scope, started = SharingStarted.Lazily, initialValue = null)
+
+    override val proxyHeader: StateFlow<ProxyHeaderVo> = _proxyHeader.asStateFlow()
 
     init {
-        proxiesRepository.proxiesFlow()
-            .map { proxiesList ->
-                val proxyInstance = proxiesList.proxyInstanceList.find { it.proxyId == proxyId }
+        currentProxy
+            .map { proxyInstance ->
                 proxyInstance?.run {
-                    ProxyStateVo.Loaded(
-                        name = paramsOrNull?.name ?: " <Unknown proxy>",
-                        type = paramsOrNull?.type?.name ?: "unknown",
-                        port = paramsOrNull?.port.toString(),
-                        status = when (processStatus.state) {
-                            ProcessState.PROCESS_STATE_RUNNING -> ProxyItemVo.Status.ACTIVE
-
-                            ProcessState.PROCESS_STATE_ERROR -> ProxyItemVo.Status.ERROR
-
-                            ProcessState.PROCESS_STATE_STOPPING,
-                            ProcessState.PROCESS_STATE_STARTING -> ProxyItemVo.Status.TRANSIENT
-
-                            ProcessState.PROCESS_STATE_STOPPED -> ProxyItemVo.Status.IDLE
-
-                            // TODO improve status VO
-                            else -> ProxyItemVo.Status.ERROR
-                        },
-                        processId = null
+                    ProxyHeaderVo(
+                        name = params.name ?: "Unknown proxy",
+                        proxyParameters = params.formatProxyParams(),
+                        proxyStatus = processStatus.formatStatus(),
+                        processId = processStatus.formatProcessId(),
+                        proxySwitchButton = formatProxySwitchButton(),
+                        streamingButton = formatStreamingButton(),
+                        filterButton = formatFilterButton(),
+                        rewriteButton = formatRewriteButton(),
                     )
-                } ?: ProxyStateVo.Error("Proxy with ID $proxyId not found")
+                }
             }
             .flowOn(Dispatchers.Default)
             .catch {
                 logger.log(Level.SEVERE, it.message, it)
             }
-            .onEach {
-                _proxyState.value = it
+            .onEach { proxyHeaderVo ->
+                proxyHeaderVo?.let {
+                    _proxyHeader.value = it
+                }
             }
             .launchIn(scope)
     }
 
-    override fun startProxy() {
-        scope.launch {
-            _isTransientState.value = true
-            try {
-                proxiesRepository.startProxy(proxyId)
-            } catch (e: Exception) {
-                logger.log(Level.SEVERE, "Failed to start proxy", e)
-                _proxyState.value = ProxyStateVo.Error(e.message ?: "Failed to start proxy")
-            } finally {
-                _isTransientState.value = false
-            }
-        }
-    }
-
-    override fun stopProxy() {
+    override fun toggleProxy() {
         scope.launch {
             try {
-                proxiesRepository.stopProxy(proxyId)
+                val processState = currentProxy.value?.processStatusOrNull?.state
+                if (processState == ProcessState.PROCESS_STATE_RUNNING) {
+                    proxiesRepository.stopProxy(proxyId)
+                } else if (processState == ProcessState.PROCESS_STATE_STOPPED) {
+                    proxiesRepository.startProxy(proxyId)
+                }
             } catch (e: Exception) {
-                logger.log(Level.SEVERE, "Failed to stop proxy", e)
-                _proxyState.value = ProxyStateVo.Error(e.message ?: "Failed to stop proxy")
+                logger.log(Level.SEVERE, "Failed to toggle proxy", e)
             }
         }
     }
@@ -109,5 +101,87 @@ class ProxyMainPaneComponentImpl(
                 componentContext = componentContext,
             )
         }
+    }
+}
+
+private fun ProxyInstance.formatProxySwitchButton(): ProxyHeaderVo.ButtonVo {
+    return when (processStatus.state) {
+        ProcessState.PROCESS_STATE_ERROR,
+        ProcessState.PROCESS_STATE_STOPPED -> ProxyHeaderVo.Defaults.proxySwitchButton.copy(isEnabled = true)
+        ProcessState.PROCESS_STATE_STARTING -> ProxyHeaderVo.Defaults.proxySwitchButton.copy(
+            text = "Start", isEnabled = false
+        )
+        ProcessState.PROCESS_STATE_RUNNING -> ProxyHeaderVo.Defaults.proxySwitchButton.copy(
+            text = "Stop", isEnabled = true
+        )
+        ProcessState.PROCESS_STATE_STOPPING -> ProxyHeaderVo.Defaults.proxySwitchButton.copy(
+            text = "Stop", isEnabled = false
+        )
+
+        ProcessState.PROCESS_STATE_UNSPECIFIED,
+        ProcessState.UNRECOGNIZED -> ProxyHeaderVo.Defaults.proxySwitchButton.copy(isEnabled = false)
+    }
+}
+
+private fun ProxyInstance.formatStreamingButton(): ProxyHeaderVo.ButtonVo {
+    if (processStatus.state != ProcessState.PROCESS_STATE_RUNNING) {
+        return ProxyHeaderVo.Defaults.streamingButton.copy(isEnabled = false)
+    }
+
+    return when (functionalityStatus.state) {
+        ProxyState.PROXY_STATE_ERROR,
+        ProxyState.PROXY_STATE_STOPPED -> ProxyHeaderVo.Defaults.streamingButton.copy(
+            icon = ProxyHeaderVo.ButtonIcon.Play,
+            isEnabled = true,
+        )
+        ProxyState.PROXY_STATE_ACTIVE -> ProxyHeaderVo.Defaults.streamingButton.copy(
+            icon = ProxyHeaderVo.ButtonIcon.Pause,
+            isEnabled = true,
+        )
+
+        ProxyState.PROXY_STATE_UNSPECIFIED,
+        ProxyState.UNRECOGNIZED -> ProxyHeaderVo.Defaults.streamingButton.copy(isEnabled = false)
+    }
+}
+
+private fun ProxyInstance.formatFilterButton(): ProxyHeaderVo.ButtonVo {
+    return ProxyHeaderVo.Defaults.filterButton
+}
+
+private fun ProxyInstance.formatRewriteButton(): ProxyHeaderVo.ButtonVo {
+    return ProxyHeaderVo.Defaults.rewriteButton
+}
+
+private fun ProxyParams.formatProxyParams(): String {
+    val proxyType = when (type) {
+        ProxyType.PROXY_TYPE_HTTP -> "HTTPS"
+        ProxyType.PROXY_TYPE_SOCKS5 -> "Socks5"
+        ProxyType.PROXY_TYPE_UPSTREAM -> "Upstream"
+        ProxyType.PROXY_TYPE_TRANSPARENT -> "Transparent"
+        ProxyType.PROXY_TYPE_REVERSE -> "Reverse"
+        ProxyType.PROXY_TYPE_UNSPECIFIED,
+        ProxyType.UNRECOGNIZED -> ""
+    }
+    return "$proxyType on $port"
+}
+
+private fun ProcessStatus?.formatProcessId(): String {
+    return if (this?.hasProcessId() == true) {
+        "PID: $processId"
+    } else {
+        ""
+    }
+}
+
+private fun ProcessStatus.formatStatus(): ProxyHeaderVo.ProxyStatus {
+    return when (state) {
+        ProcessState.PROCESS_STATE_STOPPED -> ProxyHeaderVo.ProxyStatus.Idle
+        ProcessState.PROCESS_STATE_STARTING -> ProxyHeaderVo.ProxyStatus.Starting
+        ProcessState.PROCESS_STATE_RUNNING -> ProxyHeaderVo.ProxyStatus.Running
+        ProcessState.PROCESS_STATE_STOPPING -> ProxyHeaderVo.ProxyStatus.Stopping
+
+        ProcessState.PROCESS_STATE_ERROR,
+        ProcessState.PROCESS_STATE_UNSPECIFIED,
+        ProcessState.UNRECOGNIZED -> ProxyHeaderVo.ProxyStatus.Error
     }
 }

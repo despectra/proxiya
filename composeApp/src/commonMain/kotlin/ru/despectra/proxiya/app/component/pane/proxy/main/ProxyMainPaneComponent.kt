@@ -2,15 +2,13 @@ package ru.despectra.proxiya.app.component.pane.proxy.main
 
 import kotlinx.coroutines.flow.StateFlow
 import ru.despectra.proxiya.app.component.ComponentFactory1
-import ru.despectra.proxiya.app.ui.vo.ProxyStateVo
+import ru.despectra.proxiya.app.ui.vo.ProxyHeaderVo
 
 interface ProxyMainPaneComponent {
 
-    val proxyState: StateFlow<ProxyStateVo>
-    val isProxyInTransientState: StateFlow<Boolean>
+    val proxyHeader: StateFlow<ProxyHeaderVo>
 
-    fun startProxy()
-    fun stopProxy()
+    fun toggleProxy()
 
     interface Factory : ComponentFactory1<ProxyMainPaneComponent, String>
 }

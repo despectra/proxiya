@@ -38,9 +38,9 @@ val LightCustomColorScheme = CustomColorScheme(
     info = Color(0xFF2196F3),
     
     // Status colors from Color.kt
-    statusIdle = Color(0xFF006874),
+    statusIdle = Color(0xFFA3A3A3),
     statusStarting = Color(0xFF425E91),
-    statusActive = Color(0xFF48672E),
+    statusActive = Color(0xFF2DB80C),
     statusStopping = Color(0xFF006A66),
     statusError = Color(0xFF904A41),
     statusStreaming = Color(0xFF2E6A44),
@@ -61,9 +61,9 @@ val DarkCustomColorScheme = CustomColorScheme(
     info = Color(0xFF64B5F6),
     
     // Status colors from Color.kt
-    statusIdle = Color(0xFF82D3E0),
+    statusIdle = Color(0xFF767676),
     statusStarting = Color(0xFFABC7FF),
-    statusActive = Color(0xFFAED18D),
+    statusActive = Color(0xFF96EF3E),
     statusStopping = Color(0xFF80D5D0),
     statusError = Color(0xFFFFB4A9),
     statusStreaming = Color(0xFF96D5A6),
