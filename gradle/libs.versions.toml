@@ -1,7 +1,6 @@
 [versions]
 androidx-lifecycle = "2.9.3"
-composeHotReload = "1.0.0-beta06"
-composeMultiplatform = "1.9.0"
+composeMultiplatform = "1.10.0"
 junit = "4.13.2"
 kotlin = "2.2.10"
 kotlinx-coroutines = "1.10.2"
@@ -52,7 +51,6 @@ compose-icons-fontawesome = { module = "br.com.devsrsouza.compose.icons:font-awe
 compose-icons-octicons = { module = "br.com.devsrsouza.compose.icons:octicons", version.ref = "compose-icons" }
 
 [plugins]
-composeHotReload = { id = "org.jetbrains.compose.hot-reload", version.ref = "composeHotReload" }
 composeMultiplatform = { id = "org.jetbrains.compose", version.ref = "composeMultiplatform" }
 composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
