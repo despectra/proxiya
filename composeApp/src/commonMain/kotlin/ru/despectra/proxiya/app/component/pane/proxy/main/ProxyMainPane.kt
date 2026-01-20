@@ -2,15 +2,13 @@ package ru.despectra.proxiya.app.component.pane.proxy.main
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.tooling.preview.Preview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import org.jetbrains.compose.ui.tooling.preview.Preview
 import ru.despectra.proxiya.app.component.pane.MaterialPane
 import ru.despectra.proxiya.app.data.settings.ThemeMode
 import ru.despectra.proxiya.app.ui.kit.proxy.ProxyHeader
@@ -24,7 +22,7 @@ fun ProxyMainPane(component: ProxyMainPaneComponent) {
 
     MaterialPane(isolated = false) {
         Column(
-            modifier = Modifier.fillMaxSize().padding(8.dp)
+            modifier = Modifier.fillMaxSize()
         ) {
             ProxyHeader(
                 proxyHeaderVo = proxyHeaderVo,

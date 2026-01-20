@@ -2,6 +2,7 @@ package ru.despectra.proxiya.app.ui.vo
 
 data class ProxyHeaderVo(
     val name: String,
+    val description: String?,
     val proxyParameters: String,
     val proxyStatus: ProxyStatus,
     val processId: String,
@@ -62,6 +63,7 @@ data class ProxyHeaderVo(
     companion object {
         val init = ProxyHeaderVo(
             name = "Loading ...",
+            description = "",
             proxyParameters = "",
             proxyStatus = ProxyStatus.Idle,
             processId = "",

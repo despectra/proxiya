@@ -4,8 +4,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import org.jetbrains.compose.ui.tooling.preview.Preview
 import ru.despectra.proxiya.app.data.settings.ThemeMode
 import ru.despectra.proxiya.app.ui.theme.ProxiyaTheme
 import ru.despectra.proxiya.app.ui.vo.ProxyHeaderVo
@@ -13,6 +13,7 @@ import ru.despectra.proxiya.app.ui.vo.ProxyHeaderVo
 object ProxyHeaderPreviews {
     val runningProxy = ProxyHeaderVo(
         name = "Android",
+        description = "Main proxy for Android devices",
         proxyParameters = "HTTPS on 8080",
         proxyStatus = ProxyHeaderVo.ProxyStatus.Running,
         proxySwitchButton = ProxyHeaderVo.ButtonVo(

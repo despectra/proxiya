@@ -51,6 +51,7 @@ class ProxyMainPaneComponentImpl(
                 proxyInstance?.run {
                     ProxyHeaderVo(
                         name = params.name ?: "Unknown proxy",
+                        description = "Proxy description for clarity", // TODO optional description
                         proxyParameters = params.formatProxyParams(),
                         proxyStatus = processStatus.formatStatus(),
                         processId = processStatus.formatProcessId(),
