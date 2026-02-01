@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
@@ -37,11 +38,15 @@ fun WaterfallTable(
                 .fillMaxWidth()
                 .height(28.dp)
         ) {
-            for(columnId in data.columnsOrdered) {
+            for ((index, columnId) in data.columnsOrdered.withIndex()) {
                 val columnData = data.columnsData[columnId] ?: continue
+                val dividerColor = MaterialTheme.colorScheme.outlineVariant
                 ColumnHeader(
                     text = columnData.name,
-                    modifier = Modifier.weight(data.columnWeight(columnId))
+                    modifier = Modifier
+                        .weight(data.columnWeight(columnId))
+                        .bottomDivider(dividerColor)
+                        .cellBasePadding(index)
                 )
             }
         }
@@ -56,12 +61,14 @@ fun WaterfallTable(
                         .height(28.dp)
                         .background(color = row.rowAppearance.background)
                 ) {
-                    for (columnId in data.columnsOrdered) {
+                    for ((index, columnId) in data.columnsOrdered.withIndex()) {
                         val cellData = row.cells[columnId] ?: continue
                         Cell(
                             text = cellData.text,
                             backgroundColor = cellData.cellAppearance.overlayColor,
-                            modifier = Modifier.weight(data.columnWeight(columnId))
+                            modifier = Modifier
+                                .weight(data.columnWeight(columnId))
+                                .cellBasePadding(index)
                         )
                     }
                 }
@@ -75,24 +82,9 @@ private fun ColumnHeader(
     text: String,
     modifier: Modifier = Modifier,
 ) {
-    val dividerColor = MaterialTheme.colorScheme.outlineVariant
     Box(
         modifier = modifier
-            .fillMaxHeight()
-            .drawBehind {
-                drawLine(
-                    color = dividerColor,
-                    start = Offset(
-                        x = 0f,
-                        y = size.height - 1f,
-                    ),
-                    end = Offset(
-                        x = size.width,
-                        y = size.height - 1f
-                    ),
-                    strokeWidth = 1.dp.toPx(),
-                )
-            },
+            .fillMaxHeight(),
         contentAlignment = Alignment.CenterStart,
     ) {
         Text(
@@ -105,6 +97,33 @@ private fun ColumnHeader(
     }
 }
 
+private fun Modifier.bottomDivider(dividerColor: Color): Modifier {
+    return drawBehind {
+        drawLine(
+            color = dividerColor,
+            start = Offset(
+                x = 0f,
+                y = size.height,
+            ),
+            end = Offset(
+                x = size.width,
+                y = size.height
+            ),
+            strokeWidth = 1.dp.toPx(),
+        )
+    }
+}
+
+private fun Modifier.cellBasePadding(cellIndex: Int): Modifier {
+    return then(
+        if (cellIndex == 0) {
+            Modifier.padding(start = 16.dp)
+        } else {
+            Modifier
+        }
+    )
+}
+
 @Composable
 private fun Cell(
     text: String,
@@ -112,7 +131,10 @@ private fun Cell(
     modifier: Modifier = Modifier,
 ) {
     Box(
-        modifier = modifier.fillMaxHeight().background(backgroundColor),
+        modifier = modifier
+            .fillMaxHeight()
+            .background(backgroundColor)
+            .padding(end = 4.dp),
         contentAlignment = Alignment.CenterStart,
     ) {
         Text(
