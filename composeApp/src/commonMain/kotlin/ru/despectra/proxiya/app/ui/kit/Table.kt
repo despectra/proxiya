@@ -1,6 +1,7 @@
 package ru.despectra.proxiya.app.ui.kit
 
-import androidx.compose.foundation.background
+import androidx.compose.foundation.VerticalScrollbar
+import androidx.compose.foundation.defaultScrollbarStyle
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
@@ -14,6 +15,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollbarAdapter
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -32,6 +35,7 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerHoverIcon
@@ -253,31 +257,63 @@ fun WaterfallTable(
             }
         }
 
-        LazyColumn(
+        Box(
             modifier = Modifier.fillMaxSize(),
         ) {
-            items(data.rows, key = { it.index }) { row ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(28.dp)
-                        .background(color = row.rowAppearance.background)
-                ) {
-                    for ((index, columnId) in data.columnsOrdered.withIndex()) {
-                        val cellData = row.cells[columnId] ?: continue
-                        val isFirst = index == 0
-                        val isLast = index == data.columnsOrdered.lastIndex
-                        val cellWeight by derivedStateOf { columnsWeightState[columnId] ?: 0f }
-                        Cell(
-                            text = cellData.text,
-                            backgroundColor = cellData.cellAppearance.overlayColor,
-                            modifier = Modifier
-                                .weight(cellWeight)
-                                .cellBasePadding(isFirst, isLast)
-                        )
+            val lazyListState = rememberLazyListState()
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                state = lazyListState,
+            ) {
+                items(data.rows, key = { it.index }) { row ->
+                    val interactionSource = remember { MutableInteractionSource() }
+                    val isHovered by interactionSource.collectIsHoveredAsState()
+
+                    val hoverColorOverlay = MaterialTheme.colorScheme.surfaceVariant
+                    val hoverColorBase = MaterialTheme.colorScheme.secondaryContainer
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(28.dp)
+                            .hoverable(interactionSource)
+                            .drawBehind {
+                                if (isHovered) {
+                                    drawRect(
+                                        hoverColorOverlay.copy(alpha = 0.7f)
+                                            .compositeOver(hoverColorBase)
+                                            .copy(alpha = 0.6f),
+                                    )
+                                } else {
+                                    drawRect(color = row.rowAppearance.background)
+                                }
+                            }
+                    ) {
+                        for ((index, columnId) in data.columnsOrdered.withIndex()) {
+                            val cellData = row.cells[columnId] ?: continue
+                            val isFirst = index == 0
+                            val isLast = index == data.columnsOrdered.lastIndex
+                            val cellWeight by derivedStateOf { columnsWeightState[columnId] ?: 0f }
+                            Cell(
+                                text = cellData.text,
+                                modifier = Modifier
+                                    .weight(cellWeight)
+                                    .cellBasePadding(isFirst, isLast)
+                            )
+                        }
                     }
                 }
             }
+
+            VerticalScrollbar(
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .fillMaxHeight(),
+                style = defaultScrollbarStyle().copy(
+                    hoverColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                    unhoverColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f),
+                ),
+                adapter = rememberScrollbarAdapter(scrollState = lazyListState),
+            )
         }
     }
 }
@@ -329,13 +365,10 @@ private fun Modifier.cellBasePadding(isFirst: Boolean, isLast: Boolean): Modifie
 @Composable
 private fun Cell(
     text: String,
-    backgroundColor: Color,
     modifier: Modifier = Modifier,
 ) {
     Box(
-        modifier = modifier
-            .fillMaxHeight()
-            .background(backgroundColor),
+        modifier = modifier.fillMaxHeight(),
         contentAlignment = Alignment.CenterStart,
     ) {
         Text(
