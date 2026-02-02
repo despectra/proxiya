@@ -44,7 +44,7 @@ import ru.despectra.proxiya.app.ui.kit.WaterfallTable.Data
 import kotlin.math.abs
 
 private const val HEADER_RESIZE_ACTIVATION_THRESHOLD = 8
-private const val COLUMN_MIN_WIDTH = 24
+private const val COLUMN_MIN_WIDTH = 36
 
 @Composable
 fun WaterfallTable(
@@ -110,11 +110,13 @@ fun WaterfallTable(
                             }
                             val pointerPosition = event.changes.first().position
                             val normalizedPointerPosition: Float = pointerPosition.x / size.width
-                            println("Table header ptr move event: " +
-                                    "pos = ${event.changes.firstOrNull()?.position} " +
-                                    "[changes size ${event.changes.size}], " +
-                                    "normalized = $normalizedPointerPosition, " +
-                                    "bounds = ${size.width}x${size.height}")
+                            println(
+                                "Table header ptr move event: " +
+                                        "pos = ${event.changes.firstOrNull()?.position} " +
+                                        "[changes size ${event.changes.size}], " +
+                                        "normalized = $normalizedPointerPosition, " +
+                                        "bounds = ${size.width}x${size.height}"
+                            )
 
                             if (isResizingColumns) {
                                 val (firstResizableColumn, secondResizableColumn) = currentlyResizingColumns
@@ -123,28 +125,36 @@ fun WaterfallTable(
                                 val minWeight = COLUMN_MIN_WIDTH.dp.toPx() / size.width
                                 val maxWeight = firstWeight + secondWeight
 
-                                var accumulatedNormalizedPosition = 0f
-                                var updatedFirstWeight = columnsWeightState[firstResizableColumn]
-                                var updatedSecondWeight = columnsWeightState[secondResizableColumn]
+                                var accumulated = 0f
+                                var updatedFirstWeight = firstWeight
+                                var updatedSecondWeight = secondWeight
                                 for (columnId in data.columnsOrdered) {
                                     val weight = columnsWeightState[columnId] ?: continue
                                     when (columnId) {
                                         firstResizableColumn -> {
-                                            updatedFirstWeight = (normalizedPointerPosition - accumulatedNormalizedPosition).coerceIn(minWeight, maxWeight - minWeight)
+                                            updatedFirstWeight = (normalizedPointerPosition - accumulated).coerceIn(
+                                                minWeight,
+                                                maxWeight - minWeight
+                                            )
                                             updatedSecondWeight = maxWeight - updatedFirstWeight
+                                            hoveredColumnDragHandlePosition =
+                                                ((accumulated + updatedFirstWeight) * size.width).toInt()
                                             break
                                         }
+
                                         else -> {
-                                            accumulatedNormalizedPosition += weight
+                                            accumulated += weight
                                         }
                                     }
                                 }
-                                println("Performing resizing columns " +
-                                        "[${firstResizableColumn}, " +
-                                        "$secondResizableColumn]: " +
-                                        "weights: " +
-                                        "1st = ${updatedFirstWeight}, 2nd = $updatedSecondWeight, " +
-                                        "min weight = $minWeight, max weight = $maxWeight")
+                                println(
+                                    "Performing resizing columns " +
+                                            "[${firstResizableColumn}, " +
+                                            "$secondResizableColumn]: " +
+                                            "weights: " +
+                                            "1st = ${updatedFirstWeight}, 2nd = $updatedSecondWeight, " +
+                                            "min weight = $minWeight, max weight = $maxWeight"
+                                )
 
                                 updatedFirstWeight?.let {
                                     columnsWeightState[firstResizableColumn] = it
@@ -152,7 +162,6 @@ fun WaterfallTable(
                                 updatedSecondWeight?.let {
                                     columnsWeightState[secondResizableColumn] = it
                                 }
-                                hoveredColumnDragHandlePosition = (normalizedPointerPosition * size.width).toInt()
                                 continue
                             }
 
@@ -177,44 +186,26 @@ fun WaterfallTable(
                                 val prevColumnId by lazy {
                                     data.columnsOrdered.getOrNull(index - 1)
                                 }
-                                when(index) {
-                                    // Hovered first
-                                    0 -> {
-                                        if (abs(pointerPosition.x - hoveredColumnEnd) <= HEADER_RESIZE_ACTIVATION_THRESHOLD.dp.toPx()) {
-                                            columnsToResize = listOfNotNull(
-                                                columnId,
-                                                nextColumnId
-                                            )
-                                            dragHandlePosition = hoveredColumnEnd.toInt()
-                                        }
+                                val threshold = HEADER_RESIZE_ACTIVATION_THRESHOLD.dp.toPx()
+                                fun pointerIsAround(columnBorderPosition: Float): Boolean {
+                                    return abs(pointerPosition.x - columnBorderPosition) <= threshold
+                                }
+
+                                val isFirst = index == 0
+                                val isLast = index == data.columnsOrdered.lastIndex
+
+                                when {
+                                    pointerIsAround(hoveredColumnEnd) && (isFirst || !isLast) -> {
+                                        columnsToResize = listOfNotNull(columnId, nextColumnId)
+                                        dragHandlePosition = hoveredColumnEnd.toInt()
                                     }
-                                    // Hovered last
-                                    data.columnsOrdered.lastIndex -> {
-                                        if (abs(pointerPosition.x - hoveredColumnStart) <= HEADER_RESIZE_ACTIVATION_THRESHOLD.dp.toPx()) {
-                                            columnsToResize = listOfNotNull(
-                                                prevColumnId,
-                                                columnId
-                                            )
-                                            dragHandlePosition = hoveredColumnStart.toInt()
-                                        }
-                                    }
-                                    // Hovered intermediate
-                                    else -> {
-                                        if (abs(pointerPosition.x - hoveredColumnStart) <= HEADER_RESIZE_ACTIVATION_THRESHOLD.dp.toPx()) {
-                                            columnsToResize = listOfNotNull(
-                                                prevColumnId,
-                                                columnId
-                                            )
-                                            dragHandlePosition = hoveredColumnStart.toInt()
-                                        } else if (abs(pointerPosition.x - hoveredColumnEnd) <= HEADER_RESIZE_ACTIVATION_THRESHOLD.dp.toPx()) {
-                                            columnsToResize = listOfNotNull(
-                                                columnId,
-                                                nextColumnId,
-                                            )
-                                            dragHandlePosition = hoveredColumnEnd.toInt()
-                                        }
+
+                                    pointerIsAround(hoveredColumnStart) && (!isFirst || isLast) -> {
+                                        columnsToResize = listOfNotNull(prevColumnId, columnId)
+                                        dragHandlePosition = hoveredColumnStart.toInt()
                                     }
                                 }
+
                                 println("Columns being resizing: ${columnsToResize.joinToString(", ")}")
                                 println("Drag handle position: $hoveredColumnDragHandlePosition")
                                 break
@@ -403,68 +394,69 @@ object WaterfallTable {
         }
     }
 
-    internal val previewData: Data @Composable get() = Data(
-        columnsOrdered = listOf(
-            Data.ColumnId.Datetime,
-            Data.ColumnId.HttpMethod,
-            Data.ColumnId.Host,
-            Data.ColumnId.UrlPath,
-            Data.ColumnId.Status,
-            Data.ColumnId.Size,
-            Data.ColumnId.Timing,
-        ),
-        columnsData = mapOf(
-            Data.ColumnId.Datetime to Data.Column(name = "Time", weight = 0.05f),
-            Data.ColumnId.HttpMethod to Data.Column(name = "Method", weight = 0.1f),
-            Data.ColumnId.Host to Data.Column(name = "Host", weight = 0.1f),
-            Data.ColumnId.UrlPath to Data.Column(name = "URL path", weight = 0.6f),
-            Data.ColumnId.Status to Data.Column(name = "Status", weight = 0.05f),
-            Data.ColumnId.Size to Data.Column(name = "Size", weight = 0.05f),
-            Data.ColumnId.Timing to Data.Column(name = "Timing", weight = 0.05f)
-        ),
-        rows = List(100) { index ->
-            Data.Row(
-                index = index,
-                cells = mapOf(
-                    Data.ColumnId.Datetime to Data.Cell(
-                        text = "12:04",
-                        cellAppearance = Data.CellAppearance(),
+    internal val previewData: Data
+        @Composable get() = Data(
+            columnsOrdered = listOf(
+                Data.ColumnId.Datetime,
+                Data.ColumnId.HttpMethod,
+                Data.ColumnId.Host,
+                Data.ColumnId.UrlPath,
+                Data.ColumnId.Status,
+                Data.ColumnId.Size,
+                Data.ColumnId.Timing,
+            ),
+            columnsData = mapOf(
+                Data.ColumnId.Datetime to Data.Column(name = "Time", weight = 0.05f),
+                Data.ColumnId.HttpMethod to Data.Column(name = "Method", weight = 0.1f),
+                Data.ColumnId.Host to Data.Column(name = "Host", weight = 0.1f),
+                Data.ColumnId.UrlPath to Data.Column(name = "URL path", weight = 0.6f),
+                Data.ColumnId.Status to Data.Column(name = "Status", weight = 0.05f),
+                Data.ColumnId.Size to Data.Column(name = "Size", weight = 0.05f),
+                Data.ColumnId.Timing to Data.Column(name = "Timing", weight = 0.05f)
+            ),
+            rows = List(100) { index ->
+                Data.Row(
+                    index = index,
+                    cells = mapOf(
+                        Data.ColumnId.Datetime to Data.Cell(
+                            text = "12:04",
+                            cellAppearance = Data.CellAppearance(),
+                        ),
+                        Data.ColumnId.HttpMethod to Data.Cell(
+                            text = if (Math.random() > 0.5) "POST" else "GET",
+                            cellAppearance = Data.CellAppearance(),
+                        ),
+                        Data.ColumnId.Host to Data.Cell(
+                            text = "api.webpack.org",
+                            cellAppearance = Data.CellAppearance(),
+                        ),
+                        Data.ColumnId.UrlPath to Data.Cell(
+                            text = "/api/v2/packages/private/refresh?package_id=343252dfa900d8c",
+                            cellAppearance = Data.CellAppearance(),
+                        ),
+                        Data.ColumnId.Status to Data.Cell(
+                            text = "200",
+                            cellAppearance = Data.CellAppearance(),
+                        ),
+                        Data.ColumnId.Size to Data.Cell(
+                            text = "16.4 kB",
+                            cellAppearance = Data.CellAppearance(),
+                        ),
+                        Data.ColumnId.Timing to Data.Cell(
+                            text = "230 ms",
+                            cellAppearance = Data.CellAppearance(),
+                        )
                     ),
-                    Data.ColumnId.HttpMethod to Data.Cell(
-                        text = if (Math.random() > 0.5) "POST" else "GET",
-                        cellAppearance = Data.CellAppearance(),
-                    ),
-                    Data.ColumnId.Host to Data.Cell(
-                        text = "api.webpack.org",
-                        cellAppearance = Data.CellAppearance(),
-                    ),
-                    Data.ColumnId.UrlPath to Data.Cell(
-                        text = "/api/v2/packages/private/refresh?package_id=343252dfa900d8c",
-                        cellAppearance = Data.CellAppearance(),
-                    ),
-                    Data.ColumnId.Status to Data.Cell(
-                        text = "200",
-                        cellAppearance = Data.CellAppearance(),
-                    ),
-                    Data.ColumnId.Size to Data.Cell(
-                        text = "16.4 kB",
-                        cellAppearance = Data.CellAppearance(),
-                    ),
-                    Data.ColumnId.Timing to Data.Cell(
-                        text = "230 ms",
-                        cellAppearance = Data.CellAppearance(),
+                    rowAppearance = Data.RowAppearance(
+                        background = if (index % 2 == 0) {
+                            Color.Transparent
+                        } else {
+                            MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f)
+                        },
                     )
-                ),
-                rowAppearance = Data.RowAppearance(
-                    background = if (index % 2 == 0) {
-                        Color.Transparent
-                    } else {
-                        MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f)
-                    },
                 )
-            )
-        },
-    )
+            },
+        )
 }
 
 @Preview
