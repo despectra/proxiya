@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import ru.despectra.proxiya.app.component.pane.MaterialPane
 import ru.despectra.proxiya.app.data.settings.ThemeMode
+import ru.despectra.proxiya.app.ui.kit.WaterfallTable
 import ru.despectra.proxiya.app.ui.kit.proxy.ProxyHeader
 import ru.despectra.proxiya.app.ui.kit.proxy.ProxyHeaderPreviews
 import ru.despectra.proxiya.app.ui.theme.ProxiyaTheme
@@ -38,6 +39,10 @@ fun ProxyMainPane(component: ProxyMainPaneComponent) {
                 onRewriteClick = {
                     // TODO
                 }
+            )
+
+            WaterfallTable(
+                data = WaterfallTable.previewData,
             )
         }
     }
