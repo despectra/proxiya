@@ -114,13 +114,6 @@ fun WaterfallTable(
                             }
                             val pointerPosition = event.changes.first().position
                             val normalizedPointerPosition: Float = pointerPosition.x / size.width
-                            println(
-                                "Table header ptr move event: " +
-                                        "pos = ${event.changes.firstOrNull()?.position} " +
-                                        "[changes size ${event.changes.size}], " +
-                                        "normalized = $normalizedPointerPosition, " +
-                                        "bounds = ${size.width}x${size.height}"
-                            )
 
                             if (isResizingColumns) {
                                 val (firstResizableColumn, secondResizableColumn) = currentlyResizingColumns
@@ -151,21 +144,9 @@ fun WaterfallTable(
                                         }
                                     }
                                 }
-                                println(
-                                    "Performing resizing columns " +
-                                            "[${firstResizableColumn}, " +
-                                            "$secondResizableColumn]: " +
-                                            "weights: " +
-                                            "1st = ${updatedFirstWeight}, 2nd = $updatedSecondWeight, " +
-                                            "min weight = $minWeight, max weight = $maxWeight"
-                                )
 
-                                updatedFirstWeight?.let {
-                                    columnsWeightState[firstResizableColumn] = it
-                                }
-                                updatedSecondWeight?.let {
-                                    columnsWeightState[secondResizableColumn] = it
-                                }
+                                columnsWeightState[firstResizableColumn] = updatedFirstWeight
+                                columnsWeightState[secondResizableColumn] = updatedSecondWeight
                                 continue
                             }
 
