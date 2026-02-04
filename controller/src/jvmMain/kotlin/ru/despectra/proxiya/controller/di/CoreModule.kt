@@ -1,10 +1,9 @@
 package ru.despectra.proxiya.controller.di
 
-import org.koin.core.KoinApplication
 import org.koin.dsl.module
 import org.koin.dsl.onClose
-import ru.despectra.proxiya.controller.config.proxy.ProxyConfigMapper
 import ru.despectra.proxiya.controller.config.proxy.ProxiesListConfigRepository
+import ru.despectra.proxiya.controller.config.proxy.ProxyConfigMapper
 import ru.despectra.proxiya.controller.grpc.ProxyControlServiceImpl
 import ru.despectra.proxiya.controller.grpc.ProxyDataServiceImpl
 import ru.despectra.proxiya.controller.grpc.instance.ProxyInstanceControlServiceImpl
@@ -15,7 +14,7 @@ import ru.despectra.proxiya.controller.repository.ProxyRepository
 import ru.despectra.proxiya.controller.server.ProxiyaControllerServer
 import ru.despectra.proxiya.controller.store.ProxyStore
 
-fun KoinApplication.coreModule() = module {
+fun coreModule() = module {
     single<ProxiyaControllerServer> {
         ProxiyaControllerServer(
             proxyControlService = get<ProxyControlServiceImpl>(),
