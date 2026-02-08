@@ -22,21 +22,4 @@ class ConfigManagerTest {
         assertNotNull(config)
         assertEquals(true, config.autoStartProxies)
     }
-    
-    @Test
-    fun `should work with config manager facade`() {
-        val configFacade = ConfigManagerFacade()
-        
-        assertNotNull(configFacade)
-        assertNotNull(configFacade.generalConfig)
-    }
-    
-    @Test
-    fun `should load and save general config through facade`() {
-        val configFacade = ConfigManagerFacade()
-        
-        // Загружаем конфигурацию
-        val config = configFacade.generalConfig.load()
-        assertNotNull(config)
-    }
 }

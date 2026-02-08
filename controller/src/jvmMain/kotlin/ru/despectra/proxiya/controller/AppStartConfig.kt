@@ -4,7 +4,8 @@ import kotlin.system.exitProcess
 
 data class AppStartConfig(
     val port: Int,
-    val host: String
+    val host: String,
+    val proxyLauncherPath: String,
 ) {
     companion object {
         fun fromArgs(args: Array<String>): AppStartConfig = parseArguments(args)
@@ -15,12 +16,14 @@ data class AppStartConfig(
         private fun parseArguments(args: Array<String>): AppStartConfig {
             var port = 50051
             var host = "0.0.0.0"
+            var proxyLauncherPath: String = ""
 
             val iterator = args.iterator()
             while (iterator.hasNext()) {
                 when (val arg = iterator.next()) {
                     "--port", "-p" -> port = parsePortArgument(iterator)
                     "--host", "-h" -> host = parseHostArgument(iterator)
+                    "--proxy-launcher-path" -> proxyLauncherPath = parseProxyLauncherPath(iterator)
                     "--help" -> {
                         printUsage()
                         exitProcess(0)
@@ -34,7 +37,12 @@ data class AppStartConfig(
                 }
             }
 
-            return AppStartConfig(port, host)
+            if (proxyLauncherPath.isBlank()) {
+                println("--proxy-launcher-path argument is required")
+                exitProcess(1)
+            }
+
+            return AppStartConfig(port, host, proxyLauncherPath)
         }
 
         private fun parsePortArgument(iterator: Iterator<String>): Int {
@@ -47,6 +55,10 @@ data class AppStartConfig(
 
         private fun parseHostArgument(iterator: Iterator<String>): String {
             return requireNextArgument(iterator, "Host not specified")
+        }
+
+        private fun parseProxyLauncherPath(iterator: Iterator<String>): String {
+            return requireNextArgument(iterator, "Proxy launcher script path not specified")
         }
 
         private fun requireNextArgument(iterator: Iterator<String>, errorMessage: String): String {
@@ -70,6 +82,7 @@ data class AppStartConfig(
                 Options:
                   -p, --port PORT     Port for gRPC server (default: 50051)
                   -h, --host HOST     Host for gRPC server (default: 0.0.0.0)
+                  --proxy-launcher-path       Path to script to start proxy
                   --help              Show this help message
                 
                 Environment Variables:

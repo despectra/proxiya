@@ -10,5 +10,7 @@ interface ProxyMainPaneComponent {
 
     fun toggleProxy()
 
+    fun toggleInterception()
+
     interface Factory : ComponentFactory1<ProxyMainPaneComponent, String>
 }

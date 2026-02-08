@@ -13,6 +13,7 @@ interface CreateProxyComponent {
     fun updateProxyType(proxyType: ProxyType)
     fun updatePort(port: String)
     fun updateAdditionalParams(additionalParams: String)
+    fun updateReverseProxyTargets(reverseProxyTargets: String)
     fun submit()
 
     interface Factory : ComponentFactory0<CreateProxyComponent>

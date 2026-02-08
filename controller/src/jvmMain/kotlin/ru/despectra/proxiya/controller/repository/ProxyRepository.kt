@@ -206,7 +206,7 @@ class ProxyRepository(
         return runCatching {
             proxyStore.updateProxy(proxyId) {
                 copy {
-                    this.functionalityStatus = proxyFunctionalityStatus {
+                    this.functionalityStatus = this.functionalityStatus.copy {
                         this.state = state
                         if (error != null) {
                             this.error = error
@@ -224,7 +224,7 @@ class ProxyRepository(
         return runCatching {
             proxyStore.updateProxy(proxyId) {
                 copy {
-                    this.functionalityStatus = proxyFunctionalityStatus {
+                    this.functionalityStatus = this.functionalityStatus.copy {
                         this.streamingEnabled = isStreamingEnabled
                     }
                     this.updatedAt = Instant.now().asProtoTimestamp()

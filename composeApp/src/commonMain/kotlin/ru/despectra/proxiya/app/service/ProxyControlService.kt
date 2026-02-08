@@ -21,6 +21,7 @@ import ru.despectra.proxiya.proto.service.control.proxiesList
 import ru.despectra.proxiya.proto.service.control.startProxyRequest
 import ru.despectra.proxiya.proto.service.control.stopProxyRequest
 import ru.despectra.proxiya.proto.service.control.streamProxiesRequest
+import ru.despectra.proxiya.proto.service.control.toggleProxyInterceptionRequest
 import ru.despectra.proxiya.proto.service.control.updateProxyRequest
 
 class ProxyControlService(
@@ -103,6 +104,17 @@ class ProxyControlService(
             stopProxy(
                 stopProxyRequest {
                     this.proxyId = proxyId
+                }
+            )
+        }
+    }
+
+    suspend fun toggleProxyInterception(proxyId: String, isEnabled: Boolean) {
+        return callService {
+            toggleProxyInterception(
+                toggleProxyInterceptionRequest {
+                    this.proxyId = proxyId
+                    this.interceptionEnabled = isEnabled
                 }
             )
         }

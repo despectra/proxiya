@@ -181,8 +181,9 @@ class ProxiyaAddon:
     def _setup_logging(self):
         """Настройка логирования"""
         logging.basicConfig(
-            level=logging.INFO,
-            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+            level=logging.DEBUG,
+            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+            datefmt='%Y-%m-%d %H:%M:%S',
         )
         self.logger = logging.getLogger('proxiya_addon')
     
@@ -312,7 +313,7 @@ class ProxiyaAddon:
         except Exception as e:
             self.logger.error(f"Failed to initialize async: {e}")
     
-    def request(self, flow: http.HTTPFlow) -> None:
+    async def request(self, flow: http.HTTPFlow) -> None:
         """Обработка HTTP запроса"""
         try:
             # Создаем уведомление о перехваченном запросе
@@ -331,7 +332,7 @@ class ProxiyaAddon:
         except Exception as e:
             self.logger.error(f"Error processing request: {e}")
     
-    def response(self, flow: http.HTTPFlow) -> None:
+    async def response(self, flow: http.HTTPFlow) -> None:
         """Обработка HTTP ответа"""
         try:
             # Создаем уведомление о перехваченном ответе

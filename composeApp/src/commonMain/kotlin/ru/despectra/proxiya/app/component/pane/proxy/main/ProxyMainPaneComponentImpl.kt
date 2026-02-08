@@ -89,6 +89,20 @@ class ProxyMainPaneComponentImpl(
         }
     }
 
+    override fun toggleInterception() {
+        scope.launch {
+            try {
+                val isCurrentlyEnabled = currentProxy.value?.functionalityStatus?.streamingEnabled == true
+                proxiesRepository.toggleProxyInterception(
+                    proxyId = proxyId,
+                    isEnabled = !isCurrentlyEnabled
+                )
+            } catch (e: Exception) {
+                logger.log(Level.SEVERE, "Failed to toggle interception", e)
+            }
+        }
+    }
+
     class Factory(
         private val proxiesRepository: ProxiesRepository,
     ) : ProxyMainPaneComponent.Factory {
@@ -130,25 +144,24 @@ private fun ProxyInstance.formatStreamingButton(): ProxyHeaderVo.ButtonVo {
     }
 
     return when (functionalityStatus.state) {
-        ProxyState.PROXY_STATE_ERROR,
-        ProxyState.PROXY_STATE_STOPPED -> ProxyHeaderVo.Defaults.streamingButton.copy(
-            icon = ProxyHeaderVo.ButtonIcon.Play,
-            isEnabled = true,
-        )
         ProxyState.PROXY_STATE_ACTIVE -> ProxyHeaderVo.Defaults.streamingButton.copy(
-            icon = ProxyHeaderVo.ButtonIcon.Pause,
+            icon = if (functionalityStatus.streamingEnabled) {
+                ProxyHeaderVo.ButtonIcon.Pause
+            } else {
+                ProxyHeaderVo.ButtonIcon.Play
+            },
             isEnabled = true,
         )
-
-        ProxyState.PROXY_STATE_UNSPECIFIED,
-        ProxyState.UNRECOGNIZED -> ProxyHeaderVo.Defaults.streamingButton.copy(isEnabled = false)
+        else -> ProxyHeaderVo.Defaults.streamingButton.copy(isEnabled = false)
     }
 }
 
+// TODO
 private fun ProxyInstance.formatFilterButton(): ProxyHeaderVo.ButtonVo {
     return ProxyHeaderVo.Defaults.filterButton
 }
 
+// TODO
 private fun ProxyInstance.formatRewriteButton(): ProxyHeaderVo.ButtonVo {
     return ProxyHeaderVo.Defaults.rewriteButton
 }

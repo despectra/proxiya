@@ -1,18 +1,24 @@
 package ru.despectra.proxiya.controller.interception
 
+import com.google.protobuf.Timestamp
+import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.yield
+import org.slf4j.LoggerFactory
+import ru.despectra.proxiya.controller.repository.ProxyId
 import ru.despectra.proxiya.controller.store.ProxyStore
 import ru.despectra.proxiya.proto.data.interception.InterceptedRequestNotification
 import ru.despectra.proxiya.proto.data.interception.InterceptedResponseNotification
@@ -36,11 +42,11 @@ private value class PreFilterResult private constructor (private val value: Bool
     }
 }
 
-typealias RequestId = String
+private typealias RequestId = String
 
 /**
- * Главный шлюз для распределения и роутинга перехваченных запросов/ответов между экземплярами прокси и внешним API.
- * Реализует сразу оба интерфейса: [InterceptedEventsProducer] и [InterceptedEventsConsumer].
+ * Класс для распределения и роутинга перехваченных запросов/ответов между экземплярами прокси и приложением-потребителем.
+ * Реализует интерфейсы [InterceptedEventsProducer] и [InterceptedEventsConsumer].
  *
  * @property proxyStore хранилище проксей для наблюдения за списком активных прокси с включенным стримингом
  */
@@ -48,12 +54,14 @@ internal class ProxyInterceptionGateway(
     private val proxyStore: ProxyStore,
 ) : Closeable, InterceptedEventsProducer, InterceptedEventsConsumer {
 
-    private val scope = CoroutineScope(SupervisorJob())
+    private val logger = LoggerFactory.getLogger(ProxyInterceptionGateway::class.java)
+
+    private val scope = CoroutineScope(SupervisorJob() + CoroutineName("ProxyInterceptionGateway"))
 
     private val requestsFlows = InterceptedEventFlows<InterceptedRequestNotification, RequestProcessingResult>()
     private val responsesFlows = InterceptedEventFlows<InterceptedResponseNotification, ResponseProcessingResult>()
 
-    private val ongoingRequests = ConcurrentHashMap<RequestId, Long>()
+    private val ongoingRequests = ConcurrentHashMap<RequestId, Timestamp>()
 
     init {
         scope.launch {
@@ -67,69 +75,36 @@ internal class ProxyInterceptionGateway(
                     }
                 }
                 .distinctUntilChanged()
+                .onEach {
+                    logger.info("Enabled proxies changed: ${it.joinToString { it.params.name }}")
+                }
                 .map { proxyInstances ->
                     proxyInstances.map { it.proxyId }.toSet()
                 }
                 .stateIn(this)
 
             requestsFlows.input
-                .preFilterEvents { request ->
-                    if (!request.hasRequestId()) {
-                        return@preFilterEvents request to PreFilterResult.DENY
-                    }
-
-                    if (!request.hasProxyId()) {
-                        return@preFilterEvents request to PreFilterResult.DENY
-                    }
-
-                    val interceptedProxyId = request.proxyId
-                    if (interceptedProxyId !in enabledProxiesIds.value) {
-                        return@preFilterEvents request to PreFilterResult.DENY
-                    }
-
-                    if (!request.hasHttpRequest()) {
-                        return@preFilterEvents request to PreFilterResult.DENY
-                    }
-
-                    request to PreFilterResult.ALLOW
-                }
+                .preFilterRequests(enabledProxiesIds)
                 // TODO processing chain engine
                 .collect { (request, preFilterResult: PreFilterResult) ->
-                    requestsFlows.returnToProxy(
+                    requestsFlows.routeBackToProxy(
                         requestProcessingResult {
                             requestId = request.requestId
                             processingKind = ProcessingKind.PROCESSING_KIND_NONE
                         }
                     )
                     if (preFilterResult.isAllowed) {
-                        ongoingRequests[request.requestId] = System.currentTimeMillis()
-                        requestsFlows.proceedToApplication(request)
+                        ongoingRequests[request.requestId] = request.timestamp
+                        logger.debug("Routing request to application: ${request.requestId}")
+                        requestsFlows.routeToApplication(request)
                     }
                 }
 
             responsesFlows.input
-                .preFilterEvents { response ->
-                    if (!response.hasRequestId()) {
-                        return@preFilterEvents response to PreFilterResult.DENY
-                    }
-
-                    if (!response.hasProxyId()) {
-                        return@preFilterEvents response to PreFilterResult.DENY
-                    }
-
-                    val interceptedProxyId = response.proxyId
-                    if (interceptedProxyId !in enabledProxiesIds.value) {
-                        return@preFilterEvents response to PreFilterResult.DENY
-                    }
-
-                    if (!response.hasHttpResponse()) {
-                        return@preFilterEvents response to PreFilterResult.DENY
-                    }
-
-                    response to PreFilterResult.ALLOW
-                }
+                .preFilterResponses(enabledProxiesIds)
+                // TODO processing chain engine
                 .collect { (response, preFilterResult: PreFilterResult) ->
-                    responsesFlows.returnToProxy(
+                    responsesFlows.routeBackToProxy(
                         responseProcessingResult {
                             requestId = response.requestId
                             processingKind = ProcessingKind.PROCESSING_KIND_NONE
@@ -137,24 +112,29 @@ internal class ProxyInterceptionGateway(
                     )
                     if (preFilterResult.isAllowed) {
                         ongoingRequests.remove(response.requestId)?.let {
-                            responsesFlows.proceedToApplication(response)
+                            logger.debug("Routing response to application: ${response.requestId}")
+                            responsesFlows.routeToApplication(response)
+                        } ?: let {
+                            logger.debug("Response for unknown request: ${response.requestId}")
                         }
                     }
                 }
         }
     }
 
-    private fun <T> Flow<T>.preFilterEvents(filterFn: (T) -> Pair<T, PreFilterResult>): Flow<Pair<T, PreFilterResult>> {
-        return map {
-            filterFn(it)
-        }
-    }
-
     override suspend fun acceptRequest(request: InterceptedRequestNotification): RequestProcessingResult {
         val deferredResult = scope.async {
             requestsFlows.result.first { it.requestId == request.requestId }
+                .apply {
+                    logger.debug(
+                        "routing request back to proxy: request id = {}, result = {}",
+                        request.requestId,
+                        processingKind
+                    )
+                }
         }
         yield()
+        logger.debug("Accepting intercepted request: request id = {}", request.requestId)
         requestsFlows.acceptFromProxy(request)
         return deferredResult.await() // TODO timeout handling
     }
@@ -162,8 +142,16 @@ internal class ProxyInterceptionGateway(
     override suspend fun acceptResponse(response: InterceptedResponseNotification): ResponseProcessingResult {
         val deferredResult = scope.async {
             responsesFlows.result.first { it.requestId == response.requestId }
+                .apply {
+                    logger.debug(
+                        "routing response back to proxy: request id = {}, result = {}",
+                        response.requestId,
+                        processingKind
+                    )
+                }
         }
         yield()
+        logger.info("Accepting intercepted response: request id = ${response.requestId}")
         responsesFlows.acceptFromProxy(response)
         return deferredResult.await() // TODO timeout handling
     }
@@ -180,6 +168,64 @@ internal class ProxyInterceptionGateway(
         scope.cancel()
     }
 
+    private fun Flow<InterceptedRequestNotification>.preFilterRequests(
+        enabledProxiesIds: StateFlow<Set<ProxyId>>,
+    ): Flow<Pair<InterceptedRequestNotification, PreFilterResult>> {
+        return map { request ->
+            if (!request.hasRequestId()) {
+                logger.debug("[PRE_FILTER] 🚫 Request has no request id")
+                return@map request to PreFilterResult.DENY
+            }
+
+            if (!request.hasProxyId()) {
+                logger.debug("[PRE_FILTER] 🚫 Request has no associated proxy id")
+                return@map request to PreFilterResult.DENY
+            }
+
+            val interceptedProxyId = request.proxyId
+            if (interceptedProxyId !in enabledProxiesIds.value) {
+                logger.debug("[PRE_FILTER] 🚫 Request is associated with inactive proxy id {}", interceptedProxyId)
+                return@map request to PreFilterResult.DENY
+            }
+
+            if (!request.hasHttpRequest()) {
+                logger.debug("[PRE_FILTER] 🚫 Request has no http payload")
+                return@map request to PreFilterResult.DENY
+            }
+
+            request to PreFilterResult.ALLOW
+        }
+    }
+
+    private fun Flow<InterceptedResponseNotification>.preFilterResponses(
+        enabledProxiesIds: StateFlow<Set<ProxyId>>,
+    ): Flow<Pair<InterceptedResponseNotification, PreFilterResult>> {
+        return map { response ->
+            if (!response.hasRequestId()) {
+                logger.debug("[PRE_FILTER] 🚫 Response has no request id")
+                return@map response to PreFilterResult.DENY
+            }
+
+            if (!response.hasProxyId()) {
+                logger.debug("[PRE_FILTER] 🚫 Response has no associated proxy id")
+                return@map response to PreFilterResult.DENY
+            }
+
+            val interceptedProxyId = response.proxyId
+            if (interceptedProxyId !in enabledProxiesIds.value) {
+                logger.debug("[PRE_FILTER] 🚫 Response is associated with inactive proxy id {}", interceptedProxyId)
+                return@map response to PreFilterResult.DENY
+            }
+
+            if (!response.hasHttpResponse()) {
+                logger.debug("[PRE_FILTER] 🚫 Response has no http payload")
+                return@map response to PreFilterResult.DENY
+            }
+
+            response to PreFilterResult.ALLOW
+        }
+    }
+
     internal data class InterceptedEventFlows<EVENT, RESULT>(
         val input: MutableSharedFlow<EVENT> = MutableSharedFlow(),
         val output: MutableSharedFlow<EVENT> = MutableSharedFlow(),
@@ -189,11 +235,11 @@ internal class ProxyInterceptionGateway(
             input.emit(event)
         }
 
-        suspend fun returnToProxy(result: RESULT) {
+        suspend fun routeBackToProxy(result: RESULT) {
             this.result.emit(result)
         }
 
-        suspend fun proceedToApplication(event: EVENT) {
+        suspend fun routeToApplication(event: EVENT) {
             output.emit(event)
         }
     }

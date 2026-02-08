@@ -5,6 +5,8 @@ import ru.despectra.proxiya.controller.grpc.ProxyControlServiceImpl
 import ru.despectra.proxiya.controller.grpc.ProxyDataServiceImpl
 import ru.despectra.proxiya.controller.grpc.instance.ProxyInstanceControlServiceImpl
 import ru.despectra.proxiya.controller.grpc.instance.ProxyInstanceDataServiceImpl
+import ru.despectra.proxiya.controller.interception.InterceptedEventsConsumer
+import ru.despectra.proxiya.controller.interception.InterceptedEventsProducer
 import ru.despectra.proxiya.controller.repository.ProxyRepository
 
 fun grpcModule() = module {
@@ -15,7 +17,9 @@ fun grpcModule() = module {
     }
 
     single<ProxyDataServiceImpl> {
-        ProxyDataServiceImpl()
+        ProxyDataServiceImpl(
+            interceptedEventsProducer = get<InterceptedEventsProducer>(),
+        )
     }
 
     single<ProxyInstanceControlServiceImpl> {
@@ -25,6 +29,8 @@ fun grpcModule() = module {
     }
 
     single<ProxyInstanceDataServiceImpl> {
-        ProxyInstanceDataServiceImpl()
+        ProxyInstanceDataServiceImpl(
+            interceptedEventsConsumer = get<InterceptedEventsConsumer>(),
+        )
     }
 }

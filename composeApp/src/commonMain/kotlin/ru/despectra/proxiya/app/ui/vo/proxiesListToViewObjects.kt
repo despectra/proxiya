@@ -13,6 +13,7 @@ fun ProxiesList.toViewObject(): List<ProxyItemVo> {
             type = when (params.type) {
                 ProxyType.PROXY_TYPE_HTTP -> "HTTPS"
                 ProxyType.PROXY_TYPE_SOCKS5 -> "SOCKS5"
+                ProxyType.PROXY_TYPE_REVERSE -> "Reverse"
                 // TODO other types
                 else -> "Unsupported type"
             },

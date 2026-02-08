@@ -31,7 +31,7 @@ fun ProxyMainPane(component: ProxyMainPaneComponent) {
                     component.toggleProxy()
                 },
                 onProxyStreamingClick = {
-                    // TODO
+                    component.toggleInterception()
                 },
                 onFilterClick = {
                     // TODO
@@ -59,6 +59,9 @@ fun ProxyMainScreenPreview() {
                     get() = MutableStateFlow(ProxyHeaderPreviews.runningProxy)
 
                 override fun toggleProxy() {
+                }
+
+                override fun toggleInterception() {
                 }
             }
         )

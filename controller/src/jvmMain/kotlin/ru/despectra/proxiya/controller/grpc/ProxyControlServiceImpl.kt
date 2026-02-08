@@ -21,6 +21,8 @@ import ru.despectra.proxiya.proto.service.control.StopProxyRequest
 import ru.despectra.proxiya.proto.service.control.StopProxyResult
 import ru.despectra.proxiya.proto.service.control.StreamControllerStatusRequest
 import ru.despectra.proxiya.proto.service.control.StreamProxiesRequest
+import ru.despectra.proxiya.proto.service.control.ToggleProxyInterceptionRequest
+import ru.despectra.proxiya.proto.service.control.ToggleProxyInterceptionResult
 import ru.despectra.proxiya.proto.service.control.UpdateProxyRequest
 import ru.despectra.proxiya.proto.service.control.UpdateProxyResult
 import ru.despectra.proxiya.proto.service.control.controllerStatus
@@ -30,6 +32,7 @@ import ru.despectra.proxiya.proto.service.control.paramsOrNull
 import ru.despectra.proxiya.proto.service.control.proxiesList
 import ru.despectra.proxiya.proto.service.control.startProxyResult
 import ru.despectra.proxiya.proto.service.control.stopProxyResult
+import ru.despectra.proxiya.proto.service.control.toggleProxyInterceptionResult
 import ru.despectra.proxiya.proto.service.control.updateProxyResult
 
 /**
@@ -176,6 +179,41 @@ class ProxyControlServiceImpl(
                         else -> makeGenericError(
                             ErrorType.INTERNAL_ERROR,
                             "Unknown failure while stopping proxy: ${error.message}"
+                        )
+                    }
+                }
+            }
+        )
+    }
+
+    override suspend fun toggleProxyInterception(
+        request: ToggleProxyInterceptionRequest
+    ): ToggleProxyInterceptionResult {
+        logger.debug("Toggle proxy interception with ID {}", request.proxyId)
+        if (request.hasProxyId().not()) {
+            return toggleProxyInterceptionResult {
+                error = makeGenericError(ErrorType.PROXY_PARAMS_INCOMPLETE, "Proxy ID is missing")
+            }
+        }
+        return proxyRepository.setProxyInstanceStreamingStatus(
+            proxyId = request.proxyId,
+            isStreamingEnabled = request.interceptionEnabled
+        ).fold(
+            onSuccess = {
+                logger.debug("Proxy {} interception is {}",
+                    request.proxyId,
+                    if (request.interceptionEnabled) "enabled" else "disabled"
+                )
+                toggleProxyInterceptionResult {}
+            },
+            onFailure = { error ->
+                logger.error("Failed to toggle proxy interception")
+                toggleProxyInterceptionResult {
+                    this.error = when (error) {
+                        is ProxiyaGenericError -> error.genericError
+                        else -> makeGenericError(
+                            ErrorType.INTERNAL_ERROR,
+                            "Unknown failure while switching proxy interception: ${error.message}"
                         )
                     }
                 }

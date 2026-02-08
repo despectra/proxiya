@@ -75,6 +75,15 @@ fun CreateProxyForm(component: CreateProxyComponent) {
                 modifier = Modifier.widthIn(min = 480.dp, max = 720.dp).padding(top = 16.dp),
             )
 
+            if (formState.proxyType == ProxyType.Reverse) {
+                OutlinedTextField(
+                    value = formState.reverseProxyTargets,
+                    onValueChange = component::updateReverseProxyTargets,
+                    label = { Text("Target servers for reverse proxy (separated by space)") },
+                    modifier = Modifier.widthIn(min = 480.dp, max = 720.dp).padding(top = 16.dp),
+                )
+            }
+
             Button(
                 onClick = component::submit,
                 modifier = Modifier.widthIn(min = 120.dp).padding(top = 16.dp),
@@ -149,4 +158,5 @@ fun ProxyTypeSelector(
 private fun ProxyType.label() = when (this) {
     ProxyType.Https -> "HTTPS"
     ProxyType.Socks5 -> "SOCKS 5"
+    ProxyType.Reverse -> "Reverse proxy"
 }

@@ -19,6 +19,7 @@ fi
 # Парсим аргументы
 PORT=50051
 HOST="0.0.0.0"
+PROXY_LAUNCHER_PATH=""
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -30,11 +31,16 @@ while [[ $# -gt 0 ]]; do
             HOST="$2"
             shift 2
             ;;
+        --proxy-launcher-path)
+            PROXY_LAUNCHER_PATH="$2"
+            shift 2
+            ;;
         --help)
             echo "Usage: $0 [options]"
             echo "Options:"
             echo "  -p, --port PORT     Port for gRPC server (default: 50051)"
             echo "  -h, --host HOST     Host for gRPC server (default: 0.0.0.0)"
+            echo "  --proxy-launcher-path Path to script that starts new proxy"
             echo "  --help              Show this help message"
             exit 0
             ;;
@@ -55,4 +61,4 @@ echo "Press Ctrl+C to stop the controller"
 echo "========================================"
 
 # Запускаем контроллер
-java -jar controller/build/libs/proxiya-controller.jar --port "$PORT" --host "$HOST"
+java -jar controller/build/libs/proxiya-controller.jar --port "$PORT" --host "$HOST" --proxy-launcher-path "$PROXY_LAUNCHER_PATH"

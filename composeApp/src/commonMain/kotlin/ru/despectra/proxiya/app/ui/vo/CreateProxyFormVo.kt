@@ -7,6 +7,7 @@ data class CreateProxyFormVo(
     val proxyType: ProxyType,
     val port: String,
     val additionalParams: String,
+    val reverseProxyTargets: String,
 ) {
 
     companion object {
@@ -15,6 +16,7 @@ data class CreateProxyFormVo(
             proxyType = ProxyType.Https,
             port = "",
             additionalParams = "",
+            reverseProxyTargets = "",
         )
     }
 

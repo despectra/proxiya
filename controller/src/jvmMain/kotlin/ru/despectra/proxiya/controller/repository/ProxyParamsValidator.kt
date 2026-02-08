@@ -38,6 +38,13 @@ class ProxyParamsValidator {
             )
         }
 
+        if (params.type == ProxyType.PROXY_TYPE_REVERSE && params.reverseProxyParamsOrNull?.destinationsCount == 0) {
+            throw makeGenericErrorAsException(
+                ErrorType.PROXY_PARAMS_INCOMPLETE,
+                "Reverse proxy destination servers are required"
+            )
+        }
+
         if (params.type == ProxyType.PROXY_TYPE_TRANSPARENT && params.transparentProxyParamsOrNull == null) {
             throw makeGenericErrorAsException(
                 ErrorType.PROXY_PARAMS_INCOMPLETE,

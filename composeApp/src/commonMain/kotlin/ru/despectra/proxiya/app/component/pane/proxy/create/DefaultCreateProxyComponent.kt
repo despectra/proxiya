@@ -44,6 +44,10 @@ class DefaultCreateProxyComponent(
         _formState.value = _formState.value.copy(additionalParams = additionalParams)
     }
 
+    override fun updateReverseProxyTargets(reverseProxyTargets: String) {
+        _formState.value = _formState.value.copy(reverseProxyTargets = reverseProxyTargets)
+    }
+
     override fun submit() {
         scope.launch {
             _submitResult.value = CreateProxyFormVo.SubmitResult.InProgress
@@ -58,6 +62,7 @@ class DefaultCreateProxyComponent(
                     proxyType = formState.proxyType,
                     port = formState.port.toInt(),
                     additionalParams = formState.additionalParams,
+                    reverseProxyTargets = formState.reverseProxyTargets,
                 )
             } catch (e: Exception) {
                 _submitResult.value = CreateProxyFormVo.SubmitResult.Error(e.message ?: "Unknown error")

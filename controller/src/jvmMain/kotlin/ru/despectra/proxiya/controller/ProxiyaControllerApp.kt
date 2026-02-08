@@ -18,7 +18,7 @@ object ProxiyaControllerApp {
         runBlocking {
             try {
                 val config = AppStartConfig.fromArgs(args)
-                val dependencyInjectionContainer = initProxiyaDependencyInjection()
+                val dependencyInjectionContainer = initProxiyaDependencyInjection(config)
                 val server = dependencyInjectionContainer.koin.get<ProxiyaControllerServer>()
                 server.start(config)
 

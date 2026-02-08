@@ -6,4 +6,5 @@ import kotlinx.serialization.Serializable
 data class EndpointConfig(
     val host: String,
     val port: Int,
+    val scheme: String,
 )

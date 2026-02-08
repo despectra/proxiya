@@ -26,6 +26,9 @@ service ProxyControlService {
   // Удаление прокси (остановка + удаление из списка)
   rpc DeleteProxy(DeleteProxyRequest) returns (DeleteProxyResult);
 
+  // Включение/выключение перехвата трафика через прокси
+  rpc ToggleProxyInterception(ToggleProxyInterceptionRequest) returns (ToggleProxyInterceptionResult);
+
   // ------ СТРИМИНГ ------
 
   // Стриминг списка прокси (обновления в реальном времени)
@@ -87,6 +90,15 @@ message DeleteProxyRequest {
 
 // Результат операции удаления прокси
 message DeleteProxyResult {
+  optional proxiya.errors.GenericError error = 1;
+}
+
+message ToggleProxyInterceptionRequest {
+  optional string proxy_id = 1;
+  optional bool interception_enabled = 2;
+}
+
+message ToggleProxyInterceptionResult {
   optional proxiya.errors.GenericError error = 1;
 }
 

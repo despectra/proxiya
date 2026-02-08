@@ -55,6 +55,7 @@ class ProxyConfigMapper {
                             endpoint {
                                 host = destination.host
                                 port = destination.port
+                                scheme = destination.scheme
                             }
                         }.let { destinations.addAll(it) }
                     }
@@ -99,7 +100,8 @@ class ProxyConfigMapper {
                 UpstreamProxyParamsConfig(
                     destination = EndpointConfig(
                         host = it.destination.host,
-                        port = it.destination.port
+                        port = it.destination.port,
+                        scheme = it.destination.scheme
                     )
                 )
             },
@@ -108,7 +110,8 @@ class ProxyConfigMapper {
                     destinations = it.destinationsList.map { destination ->
                         EndpointConfig(
                             host = destination.host,
-                            port = destination.port
+                            port = destination.port,
+                            scheme = destination.scheme
                         )
                     }
                 )

@@ -56,8 +56,9 @@ fi
 PROXY_ID=${PROXIYA_PROXY_ID:-"default"}
 CONTROLLER_HOST=${PROXIYA_CONTROLLER_HOST:-"localhost"}
 CONTROLLER_PORT=${PROXIYA_CONTROLLER_PORT:-"50051"}
-PROXY_PORT=${PROXIYA_PROXY_PORT:-"8080"}
 USE_TLS=${PROXIYA_USE_TLS:-"false"}
+
+POSITIONAL_ARGS=()
 
 # Парсим аргументы командной строки
 while [[ $# -gt 0 ]]; do
@@ -74,10 +75,6 @@ while [[ $# -gt 0 ]]; do
             CONTROLLER_PORT="$2"
             shift 2
             ;;
-        --proxy-port)
-            PROXY_PORT="$2"
-            shift 2
-            ;;
         --use-tls)
             USE_TLS="true"
             shift
@@ -89,7 +86,6 @@ while [[ $# -gt 0 ]]; do
             echo "  --proxy-id ID           ID прокси (по умолчанию: $PROXY_ID)"
             echo "  --controller-host HOST  Хост контроллера (по умолчанию: $CONTROLLER_HOST)"
             echo "  --controller-port PORT  Порт контроллера (по умолчанию: $CONTROLLER_PORT)"
-            echo "  --proxy-port PORT       Порт прокси (по умолчанию: $PROXY_PORT)"
             echo "  --use-tls               Использовать TLS для подключения к контроллеру"
             echo "  --help                  Показать эту справку"
             echo ""
@@ -97,29 +93,15 @@ while [[ $# -gt 0 ]]; do
             echo "  PROXIYA_PROXY_ID        ID прокси"
             echo "  PROXIYA_CONTROLLER_HOST Хост контроллера"
             echo "  PROXIYA_CONTROLLER_PORT Порт контроллера"
-            echo "  PROXIYA_PROXY_PORT      Порт прокси"
             echo "  PROXIYA_USE_TLS         Использовать TLS (true/false)"
             exit 0
             ;;
         *)
-            log_error "Неизвестный параметр: $1"
-            echo "Используйте --help для справки"
-            exit 1
+            POSITIONAL_ARGS+=("$1")
+            shift
             ;;
     esac
 done
-
-# Проверяем, что gRPC стабы сгенерированы
-GENERATED_DIR="$SCRIPT_DIR/generated"
-if [ ! -d "$GENERATED_DIR" ] || [ ! -f "$GENERATED_DIR/proxiya_pb2.py" ]; then
-    log_warn "gRPC стабы не найдены. Генерируем..."
-    cd "$SCRIPT_DIR"
-    python3 generate_grpc_stubs.py
-    if [ $? -ne 0 ]; then
-        log_error "Не удалось сгенерировать gRPC стабы"
-        exit 1
-    fi
-fi
 
 # Устанавливаем переменные окружения
 export PROXIYA_PROXY_ID="$PROXY_ID"
@@ -131,7 +113,6 @@ export PROXIYA_USE_TLS="$USE_TLS"
 log_info "Запуск Proxiya mitmproxy аддона"
 echo "  Proxy ID: $PROXY_ID"
 echo "  Controller: $CONTROLLER_HOST:$CONTROLLER_PORT"
-echo "  Proxy Port: $PROXY_PORT"
 echo "  Use TLS: $USE_TLS"
 echo ""
 
@@ -153,11 +134,15 @@ log_info "Запускаем mitmproxy..."
 echo ""
 
 cd "$SCRIPT_DIR"
-exec mitmdump \
+exec uvx \
+    --from mitmproxy \
+    --with grpcio \
+    --with grpcio-tools \
+    --with protobuf \
+    mitmdump \
     -s "$ADDON_FILE" \
-    -p "$PROXY_PORT" \
     --set proxiya_proxy_id="$PROXY_ID" \
     --set proxiya_controller_host="$CONTROLLER_HOST" \
     --set proxiya_controller_port="$CONTROLLER_PORT" \
     --set proxiya_use_tls="$USE_TLS" \
-    "$@"
+    "${POSITIONAL_ARGS[@]}"

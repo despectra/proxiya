@@ -11,6 +11,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import org.slf4j.LoggerFactory
+import ru.despectra.proxiya.controller.AppStartConfig
 import ru.despectra.proxiya.controller.utils.MutexByKey
 import ru.despectra.proxiya.proto.proxy.ProcessState
 import ru.despectra.proxiya.proto.proxy.ProxyParams
@@ -27,7 +28,9 @@ import java.util.concurrent.atomic.AtomicBoolean
  * Реализует [Closeable] для безопасного завершения всех запущенных процессов.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
-class MitmproxyProcessManager : Closeable {
+class MitmproxyProcessManager(
+    private val appStartConfig: AppStartConfig,
+) : Closeable {
     private val proxyProcesses = ConcurrentHashMap<ProxyId, ProxyProcessDescriptor>()
     private val mutexByKey = MutexByKey<ProxyId>()
     private var isClosing = AtomicBoolean(false)
@@ -140,22 +143,30 @@ class MitmproxyProcessManager : Closeable {
 
     private fun startMitmproxyProcess(proxyId: String, proxyParams: ProxyParams): Process {
         logger.debug("startMitmproxyProcess..")
-        // Путь к аддону
-        val addonPath = File("mitmproxy_addon/proxiya_addon.py").absolutePath // TODO from config
-
-        val proxyMode = when (proxyParams.type) {
-            ProxyType.PROXY_TYPE_SOCKS5 -> "socks5"
-            else -> null // TODO support other types
+        val proxyModePart: List<String> = when (proxyParams.type) {
+            ProxyType.PROXY_TYPE_SOCKS5 -> {
+                listOf("--mode", "socks5")
+            }
+            ProxyType.PROXY_TYPE_REVERSE -> {
+                proxyParams.reverseProxyParams.destinationsList
+                    .orEmpty() // never empty because of validation
+                    .flatMap { destination ->
+                        val scheme = destination.scheme.takeIf { it.isNotBlank() } ?: "http"
+                        val host = destination.host
+                        val port = if (destination.hasPort()) destination.port else 80
+                        listOf("--mode", "reverse:$scheme://$host:$port")
+                    }
+            }
+            else -> emptyList() // TODO support other types
         }
 
-        // Команда для запуска mitmproxy
-        val baseCommand = listOfNotNull(
-            "mitmdump",
-            proxyMode?.let { "--mode" }, proxyMode,
-            "-s", addonPath,
-            "-p", proxyParams.port.toString(),
-            "--quiet",
-        )
+        val proxyLauncherPath = File(appStartConfig.proxyLauncherPath).absolutePath
+        val baseCommand = listOfNotNull(proxyLauncherPath) +
+                proxyModePart +
+                listOf(
+                    "-p", proxyParams.port.toString(),
+                    //"--quiet",
+                ) + proxyParams.extraCmdParamsList
 
         val hostsFilteringOptions = when {
             proxyParams.hostsWhitelistList.isNotEmpty() -> {
@@ -187,14 +198,17 @@ class MitmproxyProcessManager : Closeable {
             put("PROXIYA_HEARTBEAT_INTERVAL", "2") // TODO from params
         }
 
+        // TODO log proxies separately
+        val proxyLogsFile = File(appStartConfig.proxyLauncherPath)
+            .parentFile
+            .resolve("proxiya_addon_logs.txt")
+        proxyLogsFile.appendText("\n========  LOGGING PROXY $proxyId ========\n")
         // Перенаправляем вывод в логи
-        processBuilder.redirectOutput(ProcessBuilder.Redirect.PIPE)
-        processBuilder.redirectError(ProcessBuilder.Redirect.PIPE)
+        processBuilder.redirectOutput(ProcessBuilder.Redirect.appendTo(proxyLogsFile))
+        processBuilder.redirectError(ProcessBuilder.Redirect.appendTo(proxyLogsFile))
 
         logger.debug("creating Process instance...")
         val process = processBuilder.start()
-
-        // Проверяем, что процесс запустился успешно
         if (process.isAlive) {
             logger.debug("mitmproxy process for proxy $proxyId started successfully (PID: ${process.pid()})")
             return process
