@@ -83,7 +83,7 @@ message ProxyFunctionalityStatus {
   // Общее состояние прокси
   optional ProxyState state = 1;
   // Включен ли стриминг событий
-  optional bool streaming_enabled = 2;
+  optional bool interception_enabled = 2;
   // Ошибки функциональности
   optional proxiya.errors.GenericError error = 8;
 }

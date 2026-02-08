@@ -70,7 +70,7 @@ internal class ProxyInterceptionGateway(
                     proxyInstances.filter { proxy ->
                         if (proxy.processStatusOrNull?.hasState() != true) return@filter false
                         if (proxy.processStatusOrNull?.state != ProcessState.PROCESS_STATE_RUNNING) return@filter false
-                        if (proxy.functionalityStatusOrNull?.streamingEnabled != true) return@filter false
+                        if (proxy.functionalityStatusOrNull?.interceptionEnabled != true) return@filter false
                         true
                     }
                 }

@@ -92,7 +92,7 @@ class ProxyMainPaneComponentImpl(
     override fun toggleInterception() {
         scope.launch {
             try {
-                val isCurrentlyEnabled = currentProxy.value?.functionalityStatus?.streamingEnabled == true
+                val isCurrentlyEnabled = currentProxy.value?.functionalityStatus?.interceptionEnabled == true
                 proxiesRepository.toggleProxyInterception(
                     proxyId = proxyId,
                     isEnabled = !isCurrentlyEnabled
@@ -145,7 +145,7 @@ private fun ProxyInstance.formatStreamingButton(): ProxyHeaderVo.ButtonVo {
 
     return when (functionalityStatus.state) {
         ProxyState.PROXY_STATE_ACTIVE -> ProxyHeaderVo.Defaults.streamingButton.copy(
-            icon = if (functionalityStatus.streamingEnabled) {
+            icon = if (functionalityStatus.interceptionEnabled) {
                 ProxyHeaderVo.ButtonIcon.Pause
             } else {
                 ProxyHeaderVo.ButtonIcon.Play

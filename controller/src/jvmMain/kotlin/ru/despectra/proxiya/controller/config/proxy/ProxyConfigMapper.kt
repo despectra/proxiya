@@ -73,7 +73,7 @@ class ProxyConfigMapper {
         }
         this.functionalityStatus = proxyFunctionalityStatus {
             this.state = ProxyState.PROXY_STATE_STOPPED
-            this.streamingEnabled = false
+            this.interceptionEnabled = false
         }
         this.createdAt = proxyConfig.createdAt.toInstant(ZoneOffset.UTC).asProtoTimestamp()
         this.updatedAt = Instant.now().asProtoTimestamp()

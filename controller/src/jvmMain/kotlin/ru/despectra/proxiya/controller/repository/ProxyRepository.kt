@@ -225,7 +225,7 @@ class ProxyRepository(
             proxyStore.updateProxy(proxyId) {
                 copy {
                     this.functionalityStatus = this.functionalityStatus.copy {
-                        this.streamingEnabled = isStreamingEnabled
+                        this.interceptionEnabled = isStreamingEnabled
                     }
                     this.updatedAt = Instant.now().asProtoTimestamp()
                 }
