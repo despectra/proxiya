@@ -51,6 +51,8 @@ val componentsModule = module {
     factory<ProxyMainPaneComponent.Factory> {
         ProxyMainPaneComponentImpl.Factory(
             proxiesRepository = get(),
+            proxyInterceptionRepository = get(),
+            interceptedRequestsFormatter = get(),
         )
     }
 }

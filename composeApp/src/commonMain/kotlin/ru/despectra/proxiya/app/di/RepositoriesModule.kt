@@ -3,6 +3,8 @@ package ru.despectra.proxiya.app.di
 import com.russhwolf.settings.PreferencesSettings
 import com.russhwolf.settings.Settings
 import org.koin.dsl.module
+import org.koin.dsl.onClose
+import ru.despectra.proxiya.app.data.interception.ProxyInterceptionRepository
 import ru.despectra.proxiya.app.data.proxy.ProxiesRepository
 import ru.despectra.proxiya.app.data.settings.AppSettingsRepository
 import java.util.prefs.Preferences
@@ -13,6 +15,12 @@ val repositoriesModules = module {
             proxyControlService = get(),
         )
     }
+
+    single<ProxyInterceptionRepository> {
+        ProxyInterceptionRepository(
+            proxyDataService = get(),
+        )
+    } onClose { it?.close() }
 
     single<Settings> {
         PreferencesSettings.Factory(

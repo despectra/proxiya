@@ -25,13 +25,8 @@ import ru.despectra.proxiya.proto.service.control.toggleProxyInterceptionRequest
 import ru.despectra.proxiya.proto.service.control.updateProxyRequest
 
 class ProxyControlService(
-    val config: Config,
+    val config: GrpcConfig,
 ) : GrpcServiceWrapper<ProxyControlServiceGrpcKt.ProxyControlServiceCoroutineStub>() {
-
-    data class Config(
-        val host: String,
-        val port: Int
-    )
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 

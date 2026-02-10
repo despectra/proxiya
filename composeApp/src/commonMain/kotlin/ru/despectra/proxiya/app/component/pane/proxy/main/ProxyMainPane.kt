@@ -16,6 +16,7 @@ import ru.despectra.proxiya.app.ui.kit.proxy.ProxyHeader
 import ru.despectra.proxiya.app.ui.kit.proxy.ProxyHeaderPreviews
 import ru.despectra.proxiya.app.ui.theme.ProxiyaTheme
 import ru.despectra.proxiya.app.ui.vo.ProxyHeaderVo
+import ru.despectra.proxiya.app.ui.vo.ProxyInterceptionWaterfallVo
 
 @Composable
 fun ProxyMainPane(component: ProxyMainPaneComponent) {
@@ -57,6 +58,9 @@ fun ProxyMainScreenPreview() {
 
                 override val proxyHeader: StateFlow<ProxyHeaderVo>
                     get() = MutableStateFlow(ProxyHeaderPreviews.runningProxy)
+
+                override val interceptionWaterfall: StateFlow<ProxyInterceptionWaterfallVo>
+                    get() = MutableStateFlow(ProxyInterceptionWaterfallVo(emptyList()))
 
                 override fun toggleProxy() {
                 }

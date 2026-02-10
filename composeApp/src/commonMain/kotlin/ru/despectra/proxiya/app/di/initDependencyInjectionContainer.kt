@@ -12,6 +12,7 @@ internal fun initDependencyInjectionContainer(): KoinApplication {
             servicesModules,
             repositoriesModules,
             componentsModule,
+            formattersModule,
         )
     }
 }

@@ -14,8 +14,10 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import ru.despectra.proxiya.app.data.interception.ProxyInterceptionRepository
 import ru.despectra.proxiya.app.data.proxy.ProxiesRepository
 import ru.despectra.proxiya.app.ui.vo.ProxyHeaderVo
+import ru.despectra.proxiya.app.ui.vo.ProxyInterceptionWaterfallVo
 import ru.despectra.proxiya.proto.proxy.ProcessState
 import ru.despectra.proxiya.proto.proxy.ProcessStatus
 import ru.despectra.proxiya.proto.proxy.ProxyInstance
@@ -29,6 +31,8 @@ import java.util.logging.Logger
 class ProxyMainPaneComponentImpl(
     private val proxyId: String,
     private val proxiesRepository: ProxiesRepository,
+    private val proxyInterceptionRepository: ProxyInterceptionRepository,
+    private val interceptedRequestsFormatter: InterceptedRequestsFormatter,
     private val componentContext: ComponentContext,
 ) : ProxyMainPaneComponent, ComponentContext by componentContext {
 
@@ -41,9 +45,36 @@ class ProxyMainPaneComponentImpl(
         .map { proxiesList ->
             proxiesList.proxyInstanceList.find { it.proxyId == proxyId }
         }
-        .stateIn(scope, started = SharingStarted.Lazily, initialValue = null)
+        .stateIn(
+            scope = scope,
+            started = SharingStarted.Lazily,
+            initialValue = null
+        )
+
+    private val currentWaterfall = proxyInterceptionRepository
+        .interceptedRequestsByProxyId(proxyId)
+        .map { interceptedRequests ->
+            ProxyInterceptionWaterfallVo(
+                interceptedRequests = interceptedRequests.mapNotNull { request ->
+                    interceptedRequestsFormatter.format(
+                        request = request.originRequest,
+                        associatedResponse = request.associatedResponse,
+                    )
+                }
+            )
+        }
+        .flowOn(Dispatchers.Default)
+        .catch {
+            logger.log(Level.SEVERE, "Error while formatting intercepted requests", it)
+        }
+        .stateIn(
+            scope = scope,
+            started = SharingStarted.Lazily,
+            initialValue = ProxyInterceptionWaterfallVo(emptyList())
+        )
 
     override val proxyHeader: StateFlow<ProxyHeaderVo> = _proxyHeader.asStateFlow()
+    override val interceptionWaterfall: StateFlow<ProxyInterceptionWaterfallVo> = currentWaterfall
 
     init {
         currentProxy
@@ -105,6 +136,8 @@ class ProxyMainPaneComponentImpl(
 
     class Factory(
         private val proxiesRepository: ProxiesRepository,
+        private val proxyInterceptionRepository: ProxyInterceptionRepository,
+        private val interceptedRequestsFormatter: InterceptedRequestsFormatter
     ) : ProxyMainPaneComponent.Factory {
         override fun create(
             param: String,
@@ -113,6 +146,8 @@ class ProxyMainPaneComponentImpl(
             return ProxyMainPaneComponentImpl(
                 proxyId = param,
                 proxiesRepository = proxiesRepository,
+                proxyInterceptionRepository = proxyInterceptionRepository,
+                interceptedRequestsFormatter = interceptedRequestsFormatter,
                 componentContext = componentContext,
             )
         }
