@@ -4,11 +4,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.structuralEqualityPolicy
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import org.koin.compose.koinInject
 import ru.despectra.proxiya.app.component.pane.MaterialPane
 import ru.despectra.proxiya.app.data.settings.ThemeMode
 import ru.despectra.proxiya.app.ui.kit.WaterfallTable
@@ -21,6 +24,12 @@ import ru.despectra.proxiya.app.ui.vo.ProxyInterceptionWaterfallVo
 @Composable
 fun ProxyMainPane(component: ProxyMainPaneComponent) {
     val proxyHeaderVo by component.proxyHeader.collectAsState()
+    val interceptedRequests by component.interceptionWaterfall.collectAsState()
+
+    val waterfallTableFormatter = koinInject<WaterfallTableFormatter>()
+    val tableData by derivedStateOf(structuralEqualityPolicy()) {
+        waterfallTableFormatter.format(interceptedRequests)
+    }
 
     MaterialPane(isolated = false) {
         Column(
@@ -43,7 +52,7 @@ fun ProxyMainPane(component: ProxyMainPaneComponent) {
             )
 
             WaterfallTable(
-                data = WaterfallTable.previewData,
+                data = tableData,
             )
         }
     }

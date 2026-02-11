@@ -1,6 +1,7 @@
 package ru.despectra.proxiya.app.ui.kit
 
 import androidx.compose.foundation.VerticalScrollbar
+import androidx.compose.foundation.background
 import androidx.compose.foundation.defaultScrollbarStyle
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -26,6 +27,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.toMutableStateMap
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,6 +46,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
 import ru.despectra.proxiya.app.ui.kit.WaterfallTable.Data
 import kotlin.math.abs
 
@@ -242,16 +246,30 @@ fun WaterfallTable(
             modifier = Modifier.fillMaxSize(),
         ) {
             val lazyListState = rememberLazyListState()
+            // TODO "snap to top" - вынести в отдельную управляемую функциональность
+            val firstVisibleItemIndex by derivedStateOf { lazyListState.firstVisibleItemIndex }
+            val firstIsNotVisible by derivedStateOf { firstVisibleItemIndex > 0 }
+            LaunchedEffect(lazyListState) {
+                snapshotFlow { firstIsNotVisible to lazyListState.isScrollInProgress }
+                    .distinctUntilChanged()
+                    .filter { (firstIsNotVisible, isScrollInProgress) ->
+                        firstIsNotVisible && !isScrollInProgress
+                    }
+                    .collect {
+                        lazyListState.scrollToItem(0)
+                    }
+            }
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 state = lazyListState,
             ) {
-                items(data.rows, key = { it.index }) { row ->
+                items(data.rows, key = { it.id }) { row ->
                     val interactionSource = remember { MutableInteractionSource() }
                     val isHovered by interactionSource.collectIsHoveredAsState()
 
                     val hoverColorOverlay = MaterialTheme.colorScheme.surfaceVariant
                     val hoverColorBase = MaterialTheme.colorScheme.secondaryContainer
+                    val defaultBackgroundColor = row.rowAppearance.backgroundColorProvider()
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -265,7 +283,7 @@ fun WaterfallTable(
                                             .copy(alpha = 0.6f),
                                     )
                                 } else {
-                                    drawRect(color = row.rowAppearance.background)
+                                    drawRect(defaultBackgroundColor)
                                 }
                             }
                     ) {
@@ -274,8 +292,11 @@ fun WaterfallTable(
                             val isFirst = index == 0
                             val isLast = index == data.columnsOrdered.lastIndex
                             val cellWeight by derivedStateOf { columnsWeightState[columnId] ?: 0f }
+                            val cellAppearance = cellData.cellAppearance
                             Cell(
                                 text = cellData.text,
+                                textColor = cellAppearance.textColorProvider(),
+                                backgroundColor = cellAppearance.backgroundColorProvider(),
                                 modifier = Modifier
                                     .weight(cellWeight)
                                     .cellBasePadding(isFirst, isLast)
@@ -346,15 +367,19 @@ private fun Modifier.cellBasePadding(isFirst: Boolean, isLast: Boolean): Modifie
 @Composable
 private fun Cell(
     text: String,
+    textColor: Color = MaterialTheme.colorScheme.onSurface,
+    backgroundColor: Color = Color.Transparent,
     modifier: Modifier = Modifier,
 ) {
     Box(
-        modifier = modifier.fillMaxHeight(),
+        modifier = modifier
+            .fillMaxHeight()
+            .background(backgroundColor),
         contentAlignment = Alignment.CenterStart,
     ) {
         Text(
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurface,
+            color = textColor,
             textAlign = TextAlign.Center,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -375,6 +400,7 @@ object WaterfallTable {
         )
 
         data class Row(
+            val id: String,
             val index: Int,
             val cells: Map<ColumnId, Cell>,
             val rowAppearance: RowAppearance,
@@ -396,11 +422,12 @@ object WaterfallTable {
         }
 
         data class RowAppearance(
-            val background: Color,
+            val backgroundColorProvider: @Composable () -> Color,
         )
 
         data class CellAppearance(
-            val overlayColor: Color = Color.Transparent,
+            val backgroundColorProvider: @Composable () -> Color = { Color.Transparent },
+            val textColorProvider: @Composable () -> Color = { MaterialTheme.colorScheme.onSurface },
         )
 
         fun columnWeight(columnId: ColumnId): Float {
@@ -430,6 +457,7 @@ object WaterfallTable {
             ),
             rows = List(100) { index ->
                 Data.Row(
+                    id = "$index",
                     index = index,
                     cells = mapOf(
                         Data.ColumnId.Datetime to Data.Cell(
@@ -461,13 +489,13 @@ object WaterfallTable {
                             cellAppearance = Data.CellAppearance(),
                         )
                     ),
-                    rowAppearance = Data.RowAppearance(
-                        background = if (index % 2 == 0) {
+                    rowAppearance = Data.RowAppearance {
+                        if (index % 2 == 0) {
                             Color.Transparent
                         } else {
                             MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f)
-                        },
-                    )
+                        }
+                    }
                 )
             },
         )
