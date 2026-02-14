@@ -48,6 +48,9 @@ fun ProxyMainPane(component: ProxyMainPaneComponent) {
                 },
                 onRewriteClick = {
                     // TODO
+                },
+                onSnapToLatestClick = {
+                    // TODO
                 }
             )
 

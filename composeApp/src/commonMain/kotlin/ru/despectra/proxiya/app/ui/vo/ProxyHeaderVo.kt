@@ -10,6 +10,7 @@ data class ProxyHeaderVo(
     val streamingButton: ButtonVo,
     val filterButton: ButtonVo,
     val rewriteButton: ButtonVo,
+    val snapToLatestButton: SnapToLatestButtonVo,
 ) {
     data class ButtonVo(
         val text: String,
@@ -32,6 +33,16 @@ data class ProxyHeaderVo(
         Filter,
 
         Rewrite,
+    }
+
+    data class SnapToLatestButtonVo(
+        val state: State,
+    ) {
+        enum class State {
+            Snapped,
+            LockedSnap,
+            FreeScrolling,
+        }
     }
 
     object Defaults {
@@ -58,6 +69,10 @@ data class ProxyHeaderVo(
             isEnabled = true,
             icon = ButtonIcon.Rewrite
         )
+
+        val snapToLatestButton = SnapToLatestButtonVo(
+            state = SnapToLatestButtonVo.State.Snapped
+        )
     }
 
     companion object {
@@ -71,6 +86,7 @@ data class ProxyHeaderVo(
             streamingButton = Defaults.streamingButton,
             filterButton = Defaults.filterButton,
             rewriteButton = Defaults.rewriteButton,
+            snapToLatestButton = Defaults.snapToLatestButton,
         )
     }
 }

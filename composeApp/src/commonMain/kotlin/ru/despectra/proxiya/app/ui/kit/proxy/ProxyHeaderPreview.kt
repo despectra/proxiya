@@ -36,7 +36,10 @@ object ProxyHeaderPreviews {
             isEnabled = true,
             text = "Rewrite..",
             icon = ProxyHeaderVo.ButtonIcon.Rewrite,
-        )
+        ),
+        snapToLatestButton = ProxyHeaderVo.SnapToLatestButtonVo(
+            state = ProxyHeaderVo.SnapToLatestButtonVo.State.Snapped
+        ),
     )
 }
 
@@ -51,6 +54,7 @@ fun ProxyHeaderPreview() {
                 onProxyStreamingClick = {},
                 onFilterClick = {},
                 onRewriteClick = {},
+                onSnapToLatestClick = {},
             )
         }
     }

@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -28,6 +29,7 @@ import compose.icons.feathericons.Pause
 import compose.icons.feathericons.PenTool
 import compose.icons.feathericons.Play
 import compose.icons.feathericons.Power
+import ru.despectra.proxiya.app.ui.kit.SnapToLatestButton
 import ru.despectra.proxiya.app.ui.theme.ProxiyaCustomColors
 import ru.despectra.proxiya.app.ui.vo.ProxyHeaderVo
 
@@ -38,6 +40,7 @@ fun ProxyHeader(
     onProxyStreamingClick: () -> Unit,
     onFilterClick: () -> Unit,
     onRewriteClick: () -> Unit,
+    onSnapToLatestClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -58,6 +61,7 @@ fun ProxyHeader(
             ) {
                 Icon(
                     imageVector = FeatherIcons.MoreVertical,
+                    tint = MaterialTheme.colorScheme.onSurface,
                     contentDescription = "More actions on proxy"
                 )
             }
@@ -72,6 +76,8 @@ fun ProxyHeader(
             ProxyHeaderButton(proxyHeaderVo.filterButton, onFilterClick)
             Spacer(Modifier.width(8.dp))
             ProxyHeaderButton(proxyHeaderVo.rewriteButton, onRewriteClick)
+            Spacer(Modifier.fillMaxWidth().weight(1f))
+            SnapToLatestButton(vo = proxyHeaderVo.snapToLatestButton, onClick = onSnapToLatestClick)
         }
     }
 }

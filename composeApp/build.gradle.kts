@@ -30,6 +30,7 @@ kotlin {
             implementation(libs.compose.icons.feather)
             implementation(libs.compose.icons.fontawesome)
             implementation(libs.compose.icons.octicons)
+            implementation(libs.compose.icons.tablericons)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
