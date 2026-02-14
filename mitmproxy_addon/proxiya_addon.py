@@ -23,6 +23,18 @@ if generated_dir not in sys.path:
 import grpc
 from mitmproxy import http, ctx
 
+if logging.getLogger().hasHandlers():  
+    logging.getLogger().handlers = []
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    filename="proxiya_addon_direct_logs.txt",
+    filemode="w",
+    encoding='utf-8',
+    datefmt='%Y-%m-%d %H:%M:%S',
+)
+
 GRPC_AVAILABLE = False
 # Импорты прото-биндингов
 try:
@@ -180,11 +192,6 @@ class ProxiyaAddon:
     
     def _setup_logging(self):
         """Настройка логирования"""
-        logging.basicConfig(
-            level=logging.DEBUG,
-            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-            datefmt='%Y-%m-%d %H:%M:%S',
-        )
         self.logger = logging.getLogger('proxiya_addon')
     
     def load(self, loader):
@@ -316,38 +323,37 @@ class ProxiyaAddon:
     async def request(self, flow: http.HTTPFlow) -> None:
         """Обработка HTTP запроса"""
         try:
-            # Создаем уведомление о перехваченном запросе
-            notification = self._create_intercepted_request(flow)
-            
-            # Отправляем в контроллер (асинхронно)
-            if self.data_stub:
-                try:
-                    loop = asyncio.get_running_loop()
-                    loop.create_task(self._send_request_async(notification))
-                except RuntimeError:
-                    self.logger.warning("No event loop running, skipping request send")
-            
             self.logger.debug(f"Request intercepted: {flow.request.method} {flow.request.pretty_url}")
             
+            # Создаем уведомление о перехваченном запросе
+            notification = self._create_intercepted_request(flow)
+
+            # Отправляем в контроллер (асинхронно)
+            result = None
+            if self.data_stub:
+                result = await self._send_request_async(notification)
+            else:
+                self.logger.warning("No gRPC data service stub!")
+            # TODO: Обработать результат (например, модификация запроса)
         except Exception as e:
             self.logger.error(f"Error processing request: {e}")
     
     async def response(self, flow: http.HTTPFlow) -> None:
         """Обработка HTTP ответа"""
         try:
+            self.logger.debug(f"Response intercepted: {flow.response.status_code} for {flow.request.pretty_url}")
+            
             # Создаем уведомление о перехваченном ответе
             notification = self._create_intercepted_response(flow)
             
             # Отправляем в контроллер (асинхронно)
+            result = None
             if self.data_stub:
-                try:
-                    loop = asyncio.get_running_loop()
-                    loop.create_task(self._send_response_async(notification))
-                except RuntimeError:
-                    self.logger.warning("No event loop running, skipping response send")
-            
-            self.logger.debug(f"Response intercepted: {flow.response.status_code} for {flow.request.pretty_url}")
-            
+                result = await self._send_response_async(notification)
+            else:
+                self.logger.warning("No gRPC data service stub!")
+            # TODO: Обработать результат (например, модификация ответа)
+
         except Exception as e:
             self.logger.error(f"Error processing response: {e}")
     
@@ -440,18 +446,20 @@ class ProxiyaAddon:
         try:
             result = await self.data_stub.OnInterceptRequest(notification)
             self.logger.debug(f"Request processing result: {result}")
-            # TODO: Обработать результат (например, модификация запроса)
+            return result
         except Exception as e:
             self.logger.error(f"Failed to send request to controller: {e}")
+            return None
     
     async def _send_response_async(self, notification: InterceptedResponseNotification):
         """Асинхронная отправка перехваченного ответа в контроллер"""
         try:
             result = await self.data_stub.OnInterceptResponse(notification)
             self.logger.debug(f"Response processing result: {result}")
-            # TODO: Обработать результат (например, модификация ответа)
+            return result
         except Exception as e:
             self.logger.error(f"Failed to send response to controller: {e}")
+            return None
 
     def done(self):
         """Вызывается при остановке mitmproxy"""

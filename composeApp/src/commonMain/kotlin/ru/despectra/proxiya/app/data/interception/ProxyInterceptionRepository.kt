@@ -1,5 +1,6 @@
 package ru.despectra.proxiya.app.data.interception
 
+import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -40,7 +41,7 @@ class ProxyInterceptionRepository(
     private val interceptedRequestsIdsFlow = MutableStateFlow<List<InterceptedRequestKey>>(emptyList())
 
     init {
-        scope.launch {
+        scope.launch(CoroutineName("Requests interception coroutine")) {
             proxyDataService
                 .interceptedRequestsFlow(requestProcessingResultFlow)
                 .onEach { interceptedRequestNotification ->
@@ -62,7 +63,9 @@ class ProxyInterceptionRepository(
                 }
                 .flowOn(Dispatchers.Default)
                 .collect()
+        }
 
+        scope.launch(CoroutineName("Responses interception coroutine")) {
             proxyDataService
                 .interceptedResponsesFlow(responseProcessingResultFlow)
                 .onEach { interceptedResponseNotification ->

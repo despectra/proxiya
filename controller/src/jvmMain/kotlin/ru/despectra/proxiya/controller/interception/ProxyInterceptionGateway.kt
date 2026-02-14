@@ -54,7 +54,7 @@ internal class ProxyInterceptionGateway(
     private val proxyStore: ProxyStore,
 ) : Closeable, InterceptedEventsProducer, InterceptedEventsConsumer {
 
-    private val logger = LoggerFactory.getLogger(ProxyInterceptionGateway::class.java)
+    private val logger = LoggerFactory.getLogger("proxiya.controller.interception")
 
     private val scope = CoroutineScope(SupervisorJob() + CoroutineName("ProxyInterceptionGateway"))
 
@@ -83,42 +83,46 @@ internal class ProxyInterceptionGateway(
                 }
                 .stateIn(this)
 
-            requestsFlows.input
-                .preFilterRequests(enabledProxiesIds)
-                // TODO processing chain engine
-                .collect { (request, preFilterResult: PreFilterResult) ->
-                    requestsFlows.routeBackToProxy(
-                        requestProcessingResult {
-                            requestId = request.requestId
-                            processingKind = ProcessingKind.PROCESSING_KIND_NONE
+            launch(CoroutineName("Requests routing coroutine")) {
+                requestsFlows.input
+                    .preFilterRequests(enabledProxiesIds)
+                    // TODO processing chain engine
+                    .collect { (request, preFilterResult: PreFilterResult) ->
+                        requestsFlows.routeBackToProxy(
+                            requestProcessingResult {
+                                requestId = request.requestId
+                                processingKind = ProcessingKind.PROCESSING_KIND_NONE
+                            }
+                        )
+                        if (preFilterResult.isAllowed) {
+                            ongoingRequests[request.requestId] = request.timestamp
+                            logger.debug("Routing request to application: ${request.requestId}")
+                            requestsFlows.routeToApplication(request)
                         }
-                    )
-                    if (preFilterResult.isAllowed) {
-                        ongoingRequests[request.requestId] = request.timestamp
-                        logger.debug("Routing request to application: ${request.requestId}")
-                        requestsFlows.routeToApplication(request)
                     }
-                }
+            }
 
-            responsesFlows.input
-                .preFilterResponses(enabledProxiesIds)
-                // TODO processing chain engine
-                .collect { (response, preFilterResult: PreFilterResult) ->
-                    responsesFlows.routeBackToProxy(
-                        responseProcessingResult {
-                            requestId = response.requestId
-                            processingKind = ProcessingKind.PROCESSING_KIND_NONE
-                        }
-                    )
-                    if (preFilterResult.isAllowed) {
-                        ongoingRequests.remove(response.requestId)?.let {
-                            logger.debug("Routing response to application: ${response.requestId}")
-                            responsesFlows.routeToApplication(response)
-                        } ?: let {
-                            logger.debug("Response for unknown request: ${response.requestId}")
+            launch(CoroutineName("Responses routing coroutine")) {
+                responsesFlows.input
+                    .preFilterResponses(enabledProxiesIds)
+                    // TODO processing chain engine
+                    .collect { (response, preFilterResult: PreFilterResult) ->
+                        responsesFlows.routeBackToProxy(
+                            responseProcessingResult {
+                                requestId = response.requestId
+                                processingKind = ProcessingKind.PROCESSING_KIND_NONE
+                            }
+                        )
+                        if (preFilterResult.isAllowed) {
+                            ongoingRequests.remove(response.requestId)?.let {
+                                logger.debug("Routing response to application: ${response.requestId}")
+                                responsesFlows.routeToApplication(response)
+                            } ?: let {
+                                logger.debug("Response for unknown request: ${response.requestId}")
+                            }
                         }
                     }
-                }
+            }
         }
     }
 
