@@ -1,7 +1,7 @@
 package ru.despectra.proxiya.app.ui.kit
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
@@ -45,7 +45,7 @@ fun SnapToLatestButton(
     }
     val animatedCornersRadius by animateDpAsState(
         targetValue = cornersRadius,
-        animationSpec = tween(durationMillis = 250, easing = LinearOutSlowInEasing)
+        animationSpec = tween(durationMillis = 280, easing = FastOutSlowInEasing)
     )
 
     val backgroundColor = when (buttonState) {
@@ -60,11 +60,11 @@ fun SnapToLatestButton(
     }
     val animatedBackgroundColor by animateColorAsState(
         targetValue = backgroundColor,
-        animationSpec = tween(durationMillis = 250, easing = LinearOutSlowInEasing)
+        animationSpec = tween(durationMillis = 320, easing = FastOutSlowInEasing)
     )
     val animatedStrokeColor by animateColorAsState(
         targetValue = strokeColor,
-        animationSpec = tween(durationMillis = 250, easing = LinearOutSlowInEasing)
+        animationSpec = tween(durationMillis = 280, easing = FastOutSlowInEasing)
     )
 
     Box(
