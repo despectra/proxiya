@@ -17,6 +17,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -32,10 +33,12 @@ import compose.icons.feathericons.Power
 import ru.despectra.proxiya.app.ui.kit.SnapToLatestButton
 import ru.despectra.proxiya.app.ui.theme.ProxiyaCustomColors
 import ru.despectra.proxiya.app.ui.vo.ProxyHeaderVo
+import ru.despectra.proxiya.app.ui.vo.SnapToLatestButtonState
 
 @Composable
 fun ProxyHeader(
     proxyHeaderVo: ProxyHeaderVo,
+    snapToLatestButtonState: State<SnapToLatestButtonState>,
     onProxySwitchClick: () -> Unit,
     onProxyStreamingClick: () -> Unit,
     onFilterClick: () -> Unit,
@@ -77,7 +80,7 @@ fun ProxyHeader(
             Spacer(Modifier.width(8.dp))
             ProxyHeaderButton(proxyHeaderVo.rewriteButton, onRewriteClick)
             Spacer(Modifier.fillMaxWidth().weight(1f))
-            SnapToLatestButton(vo = proxyHeaderVo.snapToLatestButton, onClick = onSnapToLatestClick)
+            SnapToLatestButton(state = snapToLatestButtonState, onClick = onSnapToLatestClick)
         }
     }
 }

@@ -6,6 +6,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.structuralEqualityPolicy
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
@@ -20,6 +22,7 @@ import ru.despectra.proxiya.app.ui.kit.proxy.ProxyHeaderPreviews
 import ru.despectra.proxiya.app.ui.theme.ProxiyaTheme
 import ru.despectra.proxiya.app.ui.vo.ProxyHeaderVo
 import ru.despectra.proxiya.app.ui.vo.ProxyInterceptionWaterfallVo
+import ru.despectra.proxiya.app.ui.vo.SnapToLatestButtonState
 
 @Composable
 fun ProxyMainPane(component: ProxyMainPaneComponent) {
@@ -35,8 +38,15 @@ fun ProxyMainPane(component: ProxyMainPaneComponent) {
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
+            var snapToLatestButtonState = remember {
+                mutableStateOf<SnapToLatestButtonState>(SnapToLatestButtonState.Snapped())
+            }
+            val snapToLatestTableState = remember {
+                mutableStateOf<WaterfallTable.Snapping>(WaterfallTable.Snapping.AlwaysToIndex(0))
+            }
             ProxyHeader(
                 proxyHeaderVo = proxyHeaderVo,
+                snapToLatestButtonState = snapToLatestButtonState,
                 onProxySwitchClick = {
                     component.toggleProxy()
                 },
@@ -50,12 +60,28 @@ fun ProxyMainPane(component: ProxyMainPaneComponent) {
                     // TODO
                 },
                 onSnapToLatestClick = {
-                    // TODO
+                    when (snapToLatestButtonState.value) {
+                        is SnapToLatestButtonState.Snapped -> {}
+                        SnapToLatestButtonState.Unsnapped -> {
+                            snapToLatestTableState.value = WaterfallTable.Snapping.AlwaysToIndex(0)
+                            snapToLatestButtonState.value = SnapToLatestButtonState.Snapped()
+                        }
+                    }
                 }
             )
 
             WaterfallTable(
                 data = tableData,
+                snapping = snapToLatestTableState,
+                onSnapStateChanged = { snapped ->
+                    if (snapped) {
+                        snapToLatestTableState.value = WaterfallTable.Snapping.AlwaysToIndex(0)
+                        snapToLatestButtonState.value = SnapToLatestButtonState.Snapped()
+                    } else {
+                        snapToLatestTableState.value = WaterfallTable.Snapping.FreeScroll
+                        snapToLatestButtonState.value = SnapToLatestButtonState.Unsnapped
+                    }
+                },
             )
         }
     }

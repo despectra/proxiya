@@ -13,7 +13,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,34 +29,34 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import compose.icons.TablerIcons
 import compose.icons.tablericons.ArrowBarToUp
-import ru.despectra.proxiya.app.ui.vo.ProxyHeaderVo
+import ru.despectra.proxiya.app.ui.vo.SnapToLatestButtonState
 
 @Composable
 fun SnapToLatestButton(
-    vo: ProxyHeaderVo.SnapToLatestButtonVo,
+    state: State<SnapToLatestButtonState>,
     onClick: () -> Unit,
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
     modifier: Modifier = Modifier,
 ) {
-    val cornersRadius = when (vo.state) {
-        ProxyHeaderVo.SnapToLatestButtonVo.State.Snapped,
-        ProxyHeaderVo.SnapToLatestButtonVo.State.LockedSnap -> 12.dp
-        ProxyHeaderVo.SnapToLatestButtonVo.State.FreeScrolling -> 20.dp
+    val buttonState = state.value
+    val cornersRadius = when (buttonState) {
+        is SnapToLatestButtonState.Snapped -> 12.dp
+        SnapToLatestButtonState.Unsnapped -> 20.dp
     }
     val animatedCornersRadius by animateDpAsState(
         targetValue = cornersRadius,
         animationSpec = tween(durationMillis = 250, easing = LinearOutSlowInEasing)
     )
 
-    val backgroundColor = when (vo.state) {
-        ProxyHeaderVo.SnapToLatestButtonVo.State.Snapped -> Color.Transparent
-        ProxyHeaderVo.SnapToLatestButtonVo.State.LockedSnap -> MaterialTheme.colorScheme.primaryContainer
-        ProxyHeaderVo.SnapToLatestButtonVo.State.FreeScrolling -> MaterialTheme.colorScheme.primary
+    val backgroundColor = when (buttonState) {
+        is SnapToLatestButtonState.Snapped -> {
+            if (buttonState.locked) MaterialTheme.colorScheme.primaryContainer else Color.Transparent
+        }
+        SnapToLatestButtonState.Unsnapped -> MaterialTheme.colorScheme.primary
     }
-    val strokeColor = when (vo.state) {
-        ProxyHeaderVo.SnapToLatestButtonVo.State.Snapped -> MaterialTheme.colorScheme.outlineVariant
-        ProxyHeaderVo.SnapToLatestButtonVo.State.LockedSnap,
-        ProxyHeaderVo.SnapToLatestButtonVo.State.FreeScrolling -> Color.Transparent
+    val strokeColor = when (buttonState) {
+        is SnapToLatestButtonState.Snapped -> MaterialTheme.colorScheme.outlineVariant
+        SnapToLatestButtonState.Unsnapped -> Color.Transparent
     }
     val animatedBackgroundColor by animateColorAsState(
         targetValue = backgroundColor,
@@ -92,14 +94,14 @@ fun SnapToLatestButton(
             ),
         contentAlignment = Alignment.Center,
     ) {
+        val tintColor = when (buttonState) {
+            is SnapToLatestButtonState.Snapped -> MaterialTheme.colorScheme.onSurfaceVariant
+            SnapToLatestButtonState.Unsnapped -> MaterialTheme.colorScheme.onPrimary
+        }
         Icon(
             imageVector = TablerIcons.ArrowBarToUp,
             contentDescription = "Snap to latest button",
-            tint = when (vo.state) {
-                ProxyHeaderVo.SnapToLatestButtonVo.State.Snapped,
-                ProxyHeaderVo.SnapToLatestButtonVo.State.LockedSnap -> MaterialTheme.colorScheme.onSurfaceVariant
-                ProxyHeaderVo.SnapToLatestButtonVo.State.FreeScrolling -> MaterialTheme.colorScheme.onPrimary
-            },
+            tint = tintColor,
             modifier = Modifier.size(20.dp),
         )
     }
@@ -109,7 +111,7 @@ fun SnapToLatestButton(
 @Composable
 private fun SnapToLatestButtonPreview() {
     SnapToLatestButton(
-        vo = ProxyHeaderVo.SnapToLatestButtonVo(state = ProxyHeaderVo.SnapToLatestButtonVo.State.Snapped),
+        state = mutableStateOf(SnapToLatestButtonState.Snapped()),
         onClick = {},
     )
 }

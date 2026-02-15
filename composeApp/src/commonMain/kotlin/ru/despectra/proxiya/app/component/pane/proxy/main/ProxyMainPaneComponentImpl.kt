@@ -90,7 +90,6 @@ class ProxyMainPaneComponentImpl(
                         streamingButton = formatStreamingButton(),
                         filterButton = formatFilterButton(),
                         rewriteButton = formatRewriteButton(),
-                        snapToLatestButton = formatSnapToLatestButton(),
                     )
                 }
             }
@@ -200,11 +199,6 @@ private fun ProxyInstance.formatFilterButton(): ProxyHeaderVo.ButtonVo {
 // TODO
 private fun ProxyInstance.formatRewriteButton(): ProxyHeaderVo.ButtonVo {
     return ProxyHeaderVo.Defaults.rewriteButton
-}
-
-//TODO
-private fun ProxyInstance.formatSnapToLatestButton(): ProxyHeaderVo.SnapToLatestButtonVo {
-    return ProxyHeaderVo.SnapToLatestButtonVo(state = ProxyHeaderVo.SnapToLatestButtonVo.State.Snapped)
 }
 
 private fun ProxyParams.formatProxyParams(): String {
