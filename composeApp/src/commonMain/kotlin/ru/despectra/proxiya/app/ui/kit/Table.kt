@@ -28,7 +28,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.toMutableStateMap
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -47,7 +46,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.flow.distinctUntilChanged
 import ru.despectra.proxiya.app.ui.kit.WaterfallTable.Data
 import kotlin.math.abs
 
@@ -57,7 +55,7 @@ private const val COLUMN_MIN_WIDTH = 36
 @Composable
 fun WaterfallTable(
     data: Data,
-    snapping: State<WaterfallTable.Snapping>,
+    snapping: State<SnapToLatestBehavior.Snapping>,
     onSnapStateChanged: (snapped: Boolean) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
@@ -248,26 +246,11 @@ fun WaterfallTable(
             modifier = Modifier.fillMaxSize(),
         ) {
             val lazyListState = rememberLazyListState()
-            val firstVisibleItemIndex by derivedStateOf { lazyListState.firstVisibleItemIndex }
-            val firstIsNotVisible by derivedStateOf { firstVisibleItemIndex > 0 }
-            val isScrollInProgress = lazyListState.isScrollInProgress
-            LaunchedEffect(lazyListState, isScrollInProgress) {
-                snapshotFlow { firstIsNotVisible to snapping.value }
-                    .distinctUntilChanged()
-                    .collect { (firstNotVisible, snapping) ->
-                        if (firstNotVisible && !isScrollInProgress && snapping == WaterfallTable.Snapping.AlwaysToIndex(0)) {
-                            lazyListState.scrollToItem(0)
-                        }
-
-                        if (firstNotVisible && isScrollInProgress && snapping == WaterfallTable.Snapping.AlwaysToIndex(0)) {
-                            onSnapStateChanged(false)
-                        }
-
-                        if (!firstNotVisible && !isScrollInProgress && snapping == WaterfallTable.Snapping.FreeScroll) {
-                            onSnapStateChanged(true)
-                        }
-                    }
-            }
+            SnapToLatestBehavior(
+                lazyListState = lazyListState,
+                snapping = snapping,
+                onSnapStateChanged = onSnapStateChanged,
+            )
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 state = lazyListState,
@@ -444,11 +427,6 @@ object WaterfallTable {
         }
     }
 
-    sealed interface Snapping {
-        data object FreeScroll : Snapping
-        data class AlwaysToIndex(val index: Int) : Snapping
-    }
-
     internal val previewData: Data
         @Composable get() = Data(
             columnsOrdered = listOf(
@@ -521,6 +499,6 @@ fun PreviewWaterfallTable() {
     val tableData = WaterfallTable.previewData
     WaterfallTable(
         data = tableData,
-        snapping = mutableStateOf(WaterfallTable.Snapping.FreeScroll),
+        snapping = mutableStateOf(SnapToLatestBehavior.Snapping.FreeScroll),
     )
 }

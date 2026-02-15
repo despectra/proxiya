@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.StateFlow
 import org.koin.compose.koinInject
 import ru.despectra.proxiya.app.component.pane.MaterialPane
 import ru.despectra.proxiya.app.data.settings.ThemeMode
+import ru.despectra.proxiya.app.ui.kit.SnapToLatestBehavior.Snapping
 import ru.despectra.proxiya.app.ui.kit.WaterfallTable
 import ru.despectra.proxiya.app.ui.kit.proxy.ProxyHeader
 import ru.despectra.proxiya.app.ui.kit.proxy.ProxyHeaderPreviews
@@ -38,11 +39,11 @@ fun ProxyMainPane(component: ProxyMainPaneComponent) {
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
-            var snapToLatestButtonState = remember {
+            val snapToLatestButtonState = remember {
                 mutableStateOf<SnapToLatestButtonState>(SnapToLatestButtonState.Snapped())
             }
             val snapToLatestTableState = remember {
-                mutableStateOf<WaterfallTable.Snapping>(WaterfallTable.Snapping.AlwaysToIndex(0))
+                mutableStateOf<Snapping>(Snapping.AlwaysToIndex(0))
             }
             ProxyHeader(
                 proxyHeaderVo = proxyHeaderVo,
@@ -63,7 +64,7 @@ fun ProxyMainPane(component: ProxyMainPaneComponent) {
                     when (snapToLatestButtonState.value) {
                         is SnapToLatestButtonState.Snapped -> {}
                         SnapToLatestButtonState.Unsnapped -> {
-                            snapToLatestTableState.value = WaterfallTable.Snapping.AlwaysToIndex(0)
+                            snapToLatestTableState.value = Snapping.AlwaysToIndex(0)
                             snapToLatestButtonState.value = SnapToLatestButtonState.Snapped()
                         }
                     }
@@ -75,10 +76,10 @@ fun ProxyMainPane(component: ProxyMainPaneComponent) {
                 snapping = snapToLatestTableState,
                 onSnapStateChanged = { snapped ->
                     if (snapped) {
-                        snapToLatestTableState.value = WaterfallTable.Snapping.AlwaysToIndex(0)
+                        snapToLatestTableState.value = Snapping.AlwaysToIndex(0)
                         snapToLatestButtonState.value = SnapToLatestButtonState.Snapped()
                     } else {
-                        snapToLatestTableState.value = WaterfallTable.Snapping.FreeScroll
+                        snapToLatestTableState.value = Snapping.FreeScroll
                         snapToLatestButtonState.value = SnapToLatestButtonState.Unsnapped
                     }
                 },
