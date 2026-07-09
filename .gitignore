@@ -1,44 +1,47 @@
+# IDEs, OS metadata, and local agent tools
+.idea/
+.cursor/
+.codeassistant/
+.ucoder/
 *.iml
-.kotlin
-.gradle
-**/build/
-xcuserdata
-!src/**/build/
-local.properties
-.idea
 .DS_Store
-captures
-.externalNativeBuild
-.cxx
-*.xcodeproj/*
-!*.xcodeproj/project.pbxproj
-!*.xcodeproj/xcshareddata/
-!*.xcodeproj/project.xcworkspace/
-!*.xcworkspace/contents.xcworkspacedata
-**/xcshareddata/WorkspaceSettings.xcsettings
+Thumbs.db
 
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
+# Gradle and Kotlin
+.gradle/
+.kotlin/
+**/build/
+local.properties
+
+# Python environments and caches
+.venv/
 venv/
 env/
 ENV/
 env.bak/
 venv.bak/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
 *.egg-info/
 dist/
-build/
 .pytest_cache/
 .coverage
 htmlcov/
 
-# Generated protobuf files
+# Generated protobuf bindings
+/mitmproxy_addon/generated/
 *_pb2.py
 *_pb2_grpc.py
-generated/
 
-# Project specific
+# Runtime state and logs
+/logs/
+*.log
 mitmproxy_addon/*logs.txt
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example

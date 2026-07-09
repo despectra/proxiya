@@ -1,0 +1,47 @@
+# Supplemental context exclusions for agent tools that support .codexignore.
+# Codex project instructions and command rules remain visible.
+
+# VCS, IDEs, and local agent tools
+.git/
+.idea/
+.cursor/
+.codeassistant/
+.ucoder/
+
+# Build outputs and caches
+.gradle/
+.kotlin/
+**/build/
+
+# Python environments and caches
+.venv/
+**/venv/
+**/__pycache__/
+**/*.py[cod]
+**/.pytest_cache/
+**/.coverage
+
+# Generated sources; edit canonical .proto files instead
+mitmproxy_addon/generated/
+**/*_pb2.py
+**/*_pb2_grpc.py
+
+# Runtime data and logs
+logs/
+**/*.log
+mitmproxy_addon/*logs.txt
+
+# Local environment and secrets
+local.properties
+.env
+.env.*
+!.env.example
+
+# Binary assets that do not provide useful source context
+gradle/wrapper/gradle-wrapper.jar
+**/*.class
+**/*.ttf
+**/*.so
+**/*.dylib
+**/*.dll
+**/*.exe

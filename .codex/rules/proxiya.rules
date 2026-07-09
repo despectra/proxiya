@@ -1,0 +1,88 @@
+# Gradle executes mutable build logic outside the sandbox, so even verification tasks require confirmation.
+prefix_rule(
+    pattern = [
+        "./gradlew",
+        [
+            "check",
+            ":composeApp:jvmTest",
+            ":controller:jvmTest",
+            ":protocols:test",
+            ":protocols:generateProto",
+            ":controller:fatJar",
+        ],
+    ],
+    decision = "prompt",
+    justification = "Gradle tasks execute repository build logic and may use the network or user-level caches.",
+    match = [
+        "./gradlew check",
+        "./gradlew :controller:jvmTest --console=plain",
+    ],
+    not_match = [
+        "./gradlew clean",
+        "./gradlew :composeApp:run",
+    ],
+)
+
+# Runtime scripts open ports, spawn processes, and write local state.
+prefix_rule(
+    pattern = [
+        [
+            "./run-controller.sh",
+            "./build_and_run_controller.sh",
+            "./mitmproxy_addon/run_proxy.sh",
+            "./run_proxy.sh",
+        ],
+    ],
+    decision = "prompt",
+    justification = "Runtime scripts open ports, spawn long-lived processes, write local state, and may access the network.",
+    match = [
+        "./run-controller.sh --proxy-launcher-path mitmproxy_addon/run_proxy.sh",
+        "./mitmproxy_addon/run_proxy.sh --proxy-id test",
+    ],
+)
+
+prefix_rule(
+    pattern = [
+        "./gradlew",
+        [":composeApp:run"],
+    ],
+    decision = "prompt",
+    justification = "Application runs are long-lived and interact with local services.",
+    match = [
+        "./gradlew :composeApp:run",
+    ],
+)
+
+prefix_rule(
+    pattern = ["./setup_environment.sh"],
+    decision = "prompt",
+    justification = "Environment setup downloads packages and rewrites a local virtual environment.",
+    match = ["./setup_environment.sh"],
+)
+
+prefix_rule(
+    pattern = ["./mitmproxy_addon/setup_environment.sh"],
+    decision = "forbidden",
+    justification = "Run this cwd-dependent script from mitmproxy_addon: cd mitmproxy_addon && ./setup_environment.sh",
+    match = ["./mitmproxy_addon/setup_environment.sh"],
+)
+
+# Keep repository-history and index changes explicit.
+prefix_rule(
+    pattern = [
+        "git",
+        ["add", "commit", "push", "reset", "clean", "restore", "checkout"],
+    ],
+    decision = "prompt",
+    justification = "Index, history, remote, and destructive worktree changes require explicit confirmation.",
+    match = [
+        "git add AGENTS.md",
+        "git commit -m docs",
+        "git reset --hard",
+        "git clean -fd",
+    ],
+    not_match = [
+        "git status --short",
+        "git diff -- AGENTS.md",
+    ],
+)

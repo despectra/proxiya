@@ -1,73 +1,56 @@
 # Proxiya
 
-Современный UI-клиент для прокси-сниффера mitmproxy. Позволяет запускать процессы mitmproxy и работать с трафиком устройств и приложений. Аналог Proxyman, Charles, Fiddler.
+Proxiya — desktop-приложение для работы с HTTP(S)-трафиком через mitmproxy. Оно объединяет управление локальными прокси и просмотр перехваченных запросов в одном интерфейсе.
 
-## Архитектура проекта
+Приложение помогает исследовать сетевое взаимодействие мобильных приложений, desktop-клиентов и backend-сервисов: запускать нужную конфигурацию прокси, наблюдать за её состоянием и разбирать проходящий трафик в реальном времени.
 
-- **composeApp** - UI часть приложения (Compose Multiplatform)
-- **controller** - контроллер для управления прокси (JVM-only)
-- **protocols** - общие protobuf протоколы и gRPC API
-- **mitmproxy_addon** - Python аддон для mitmproxy
+## Возможности
 
-### Модули
+- Создание и настройка нескольких прокси.
+- Запуск, остановка и удаление прокси из приложения.
+- Отображение состояния запущенных процессов.
+- Перехват HTTP-запросов и ответов через mitmproxy.
+- Потоковое отображение трафика в табличном и waterfall-представлении.
+- Настройка портов, режимов прокси и фильтрации хостов.
+- Светлая и тёмная темы интерфейса.
 
-* [/composeApp](./composeApp/src) - UI приложение на Compose Multiplatform
-    - [commonMain](./composeApp/src/commonMain/kotlin) - общий код для всех платформ
-    - [jvmMain](./composeApp/src/jvmMain/kotlin) - JVM-специфичный код
+## Как это работает
 
-* [/controller](./controller/src) - контроллер прокси на Kotlin
-* [/protocols](./protocols/src) - protobuf протоколы и gRPC API
-* [/mitmproxy_addon](./mitmproxy_addon/) - Python аддон для mitmproxy
-
-## Сборка и запуск
-
-### UI приложение
-
-```shell
-# macOS/Linux
-./gradlew :composeApp:run
-
-# Windows
-.\gradlew.bat :composeApp:run
+```text
+Desktop UI  <-- gRPC -->  Controller  <-- gRPC -->  mitmproxy addon
 ```
 
-### Контроллер
+- `composeApp` предоставляет desktop-интерфейс на Compose Multiplatform.
+- `controller` управляет конфигурациями и процессами прокси, а также передаёт трафик в UI.
+- `mitmproxy_addon` получает HTTP-события от mitmproxy и отправляет их controller.
+- `protocols` содержит общие protobuf/gRPC-контракты компонентов.
+
+## Технологии
+
+- Kotlin, Compose Multiplatform и Material 3
+- Decompose и Koin
+- Kotlin Coroutines и Flow
+- gRPC и Protocol Buffers
+- Python, asyncio и mitmproxy
+
+## Разработка
+
+Проверка проекта:
+
+```shell
+./gradlew check
+```
+
+Запуск desktop-приложения:
+
+```shell
+./gradlew :composeApp:run
+```
+
+Сборка controller:
 
 ```shell
 ./gradlew :controller:fatJar
-java -jar controller/build/libs/proxiya-controller.jar
 ```
 
-Или используйте скрипт:
-```shell
-./run-controller.sh
-```
-
-### mitmproxy аддон
-
-```shell
-cd mitmproxy_addon
-./setup_environment.sh
-source venv/bin/activate
-mitmdump -s proxiya_addon.py --set proxiya_proxy_id=test
-```
-
-## gRPC API
-
-Система использует gRPC для связи между компонентами:
-
-- **ProxyControlService** - управление прокси (UI ↔ Controller)
-- **ProxyDataService** - стриминг трафика (Controller → UI)
-- **ProxyInstanceControlService** - уведомления (mitmproxy → Controller)
-- **ProxyInstanceDataService** - передача трафика (mitmproxy → Controller)
-
-Подробнее в [protocols/README.md](./protocols/src/main/proto/README.md)
-
-## Документация
-
-- [Общее описание проекта](./docs/overview.md)
-- [Текущая работа MVP](./docs/current-work-mvp.md)
-- [Протоколы и API](./protocols/src/main/proto/README.md)
-- [Контроллер](./controller/README.md)
-- [mitmproxy аддон](./mitmproxy_addon/README.md)
-
+Архитектурные соглашения, команды проверок и правила агентской работы описаны в [`AGENTS.md`](./AGENTS.md).
