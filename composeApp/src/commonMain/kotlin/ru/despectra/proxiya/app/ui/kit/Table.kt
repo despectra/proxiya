@@ -3,8 +3,12 @@ package ru.despectra.proxiya.app.ui.kit
 import androidx.compose.foundation.VerticalScrollbar
 import androidx.compose.foundation.background
 import androidx.compose.foundation.defaultScrollbarStyle
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -21,36 +26,37 @@ import androidx.compose.foundation.rememberScrollbarAdapter
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.toMutableStateMap
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
-import androidx.compose.ui.graphics.drawscope.translate
-import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerHoverIcon
-import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import ru.despectra.proxiya.app.ui.kit.WaterfallTable.Data
-import kotlin.math.abs
 
-private const val HEADER_RESIZE_ACTIVATION_THRESHOLD = 8
-private const val COLUMN_MIN_WIDTH = 36
+private val ColumnMinWidth = 36.dp
+private val ResizeHandleHitAreaWidth = 16.dp
+private val ResizeHandleIndicatorWidth = 4.dp
+private val ResizeHandleVerticalPadding = 4.dp
+
+private data class ResizableColumn(
+    val id: Data.ColumnId,
+    val data: Data.Column,
+)
 
 @Composable
 fun WaterfallTable(
@@ -59,188 +65,27 @@ fun WaterfallTable(
     onSnapStateChanged: (snapped: Boolean) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isRowHovered by interactionSource.collectIsHoveredAsState()
-
-    var hoveredColumnDragHandlePosition by remember {
-        mutableStateOf<Int?>(null)
-    }
-    var isResizingColumns by remember { mutableStateOf(false) }
-
-    LaunchedEffect(isRowHovered, isResizingColumns) {
-        if (!isRowHovered && !isResizingColumns) {
-            hoveredColumnDragHandlePosition = null
+    val columns = data.columnsOrdered.mapNotNull { columnId ->
+        data.columnsData[columnId]?.let { columnData ->
+            ResizableColumn(columnId, columnData)
         }
+    }
+    val initialColumnWeights = columns.map { column ->
+        column.id to column.data.weight
+    }
+    val columnWidths = remember(initialColumnWeights) {
+        TableColumnResizeState(initialColumnWeights)
     }
 
     Column(
-        modifier = modifier
-            .fillMaxSize()
-            .then(
-                if (hoveredColumnDragHandlePosition != null) {
-                    Modifier.pointerHoverIcon(ResizePointerIcon)
-                } else {
-                    Modifier
-                }
-            )
+        modifier = modifier.fillMaxSize()
     ) {
-        var currentlyResizingColumns = remember {
-            listOf<Data.ColumnId>()
-        }
-        val columnsWeights = data.columnsOrdered.map { columnId ->
-            val weight = data.columnsData[columnId]?.weight ?: 0.0f
-            columnId to weight
-        }
-
-        val columnsWeightState = remember(columnsWeights) {
-            columnsWeights.toMutableStateMap()
-        }
         val dividerColor = MaterialTheme.colorScheme.outlineVariant
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(28.dp)
-                .hoverable(interactionSource)
-                .pointerInput(Unit) {
-                    awaitPointerEventScope {
-                        while (true) {
-                            val event = awaitPointerEvent()
-                            if (event.type == PointerEventType.Press && currentlyResizingColumns.size == 2) {
-                                println("COLUMN RESIZING ON")
-                                isResizingColumns = true
-                            }
-                            if (event.type == PointerEventType.Release && isResizingColumns) {
-                                println("COLUMN RESIZING OFF")
-                                isResizingColumns = false
-                            }
-                            if (event.type != PointerEventType.Move) {
-                                continue
-                            }
-                            val pointerPosition = event.changes.first().position
-                            val normalizedPointerPosition: Float = pointerPosition.x / size.width
-
-                            if (isResizingColumns) {
-                                val (firstResizableColumn, secondResizableColumn) = currentlyResizingColumns
-                                val firstWeight = columnsWeightState[firstResizableColumn]!!
-                                val secondWeight = columnsWeightState[secondResizableColumn]!!
-                                val minWeight = COLUMN_MIN_WIDTH.dp.toPx() / size.width
-                                val maxWeight = firstWeight + secondWeight
-
-                                var accumulated = 0f
-                                var updatedFirstWeight = firstWeight
-                                var updatedSecondWeight = secondWeight
-                                for (columnId in data.columnsOrdered) {
-                                    val weight = columnsWeightState[columnId] ?: continue
-                                    when (columnId) {
-                                        firstResizableColumn -> {
-                                            updatedFirstWeight = (normalizedPointerPosition - accumulated).coerceIn(
-                                                minWeight,
-                                                maxWeight - minWeight
-                                            )
-                                            updatedSecondWeight = maxWeight - updatedFirstWeight
-                                            hoveredColumnDragHandlePosition =
-                                                ((accumulated + updatedFirstWeight) * size.width).toInt()
-                                            break
-                                        }
-
-                                        else -> {
-                                            accumulated += weight
-                                        }
-                                    }
-                                }
-
-                                columnsWeightState[firstResizableColumn] = updatedFirstWeight
-                                columnsWeightState[secondResizableColumn] = updatedSecondWeight
-                                continue
-                            }
-
-                            var accumulatedWeight = 0f
-                            var columnsToResize = listOf<Data.ColumnId>()
-                            var dragHandlePosition: Int? = null
-
-                            for ((index, columnId) in data.columnsOrdered.withIndex()) {
-                                val columnWeight = columnsWeightState[columnId] ?: continue
-                                if (accumulatedWeight + columnWeight < normalizedPointerPosition) {
-                                    accumulatedWeight += columnWeight
-                                    continue
-                                }
-
-                                println("Found hovered column: $columnId")
-                                val hoveredColumnStart = accumulatedWeight * size.width
-                                val hoveredColumnEnd = (accumulatedWeight + columnWeight) * size.width
-
-                                val nextColumnId by lazy {
-                                    data.columnsOrdered.getOrNull(index + 1)
-                                }
-                                val prevColumnId by lazy {
-                                    data.columnsOrdered.getOrNull(index - 1)
-                                }
-                                val threshold = HEADER_RESIZE_ACTIVATION_THRESHOLD.dp.toPx()
-                                fun pointerIsAround(columnBorderPosition: Float): Boolean {
-                                    return abs(pointerPosition.x - columnBorderPosition) <= threshold
-                                }
-
-                                val isFirst = index == 0
-                                val isLast = index == data.columnsOrdered.lastIndex
-
-                                when {
-                                    pointerIsAround(hoveredColumnEnd) && (isFirst || !isLast) -> {
-                                        columnsToResize = listOfNotNull(columnId, nextColumnId)
-                                        dragHandlePosition = hoveredColumnEnd.toInt()
-                                    }
-
-                                    pointerIsAround(hoveredColumnStart) && (!isFirst || isLast) -> {
-                                        columnsToResize = listOfNotNull(prevColumnId, columnId)
-                                        dragHandlePosition = hoveredColumnStart.toInt()
-                                    }
-                                }
-
-                                println("Columns being resizing: ${columnsToResize.joinToString(", ")}")
-                                println("Drag handle position: $hoveredColumnDragHandlePosition")
-                                break
-                            }
-                            currentlyResizingColumns = columnsToResize.takeIf { it.size == 2 }.orEmpty()
-                            hoveredColumnDragHandlePosition = dragHandlePosition
-                        }
-                    }
-                }
-                .then(
-                    hoveredColumnDragHandlePosition?.let { handlePosition ->
-                        Modifier.drawWithContent {
-                            drawContent()
-                            translate(
-                                left = handlePosition - 2.dp.toPx(),
-                                top = 4.dp.toPx()
-                            ) {
-                                drawRoundRect(
-                                    color = dividerColor,
-                                    topLeft = Offset(0f, 0f),
-                                    size = Size(
-                                        width = 4.dp.toPx(),
-                                        height = size.height - 8.dp.toPx()
-                                    ),
-                                    cornerRadius = CornerRadius(x = 2.dp.toPx(), y = 2.dp.toPx()),
-                                    alpha = 0.6f,
-                                )
-                            }
-                        }
-                    } ?: Modifier
-                )
-        ) {
-            for ((index, columnId) in data.columnsOrdered.withIndex()) {
-                val columnData = data.columnsData[columnId] ?: continue
-                val isFirst = index == 0
-                val isLast = index == data.columnsOrdered.lastIndex
-                val columnWeight by derivedStateOf { columnsWeightState[columnId] ?: 0f }
-                ColumnHeader(
-                    text = columnData.name,
-                    modifier = Modifier
-                        .weight(columnWeight)
-                        .bottomDivider(dividerColor)
-                        .cellBasePadding(isFirst, isLast)
-                )
-            }
-        }
+        ResizableTableHeader(
+            columns = columns,
+            columnWidths = columnWidths,
+            dividerColor = dividerColor,
+        )
 
         Box(
             modifier = Modifier.fillMaxSize(),
@@ -279,18 +124,17 @@ fun WaterfallTable(
                                 }
                             }
                     ) {
-                        for ((index, columnId) in data.columnsOrdered.withIndex()) {
-                            val cellData = row.cells[columnId] ?: continue
+                        for ((index, column) in columns.withIndex()) {
+                            val cellData = row.cells[column.id] ?: continue
                             val isFirst = index == 0
-                            val isLast = index == data.columnsOrdered.lastIndex
-                            val cellWeight by derivedStateOf { columnsWeightState[columnId] ?: 0f }
+                            val isLast = index == columns.lastIndex
                             val cellAppearance = cellData.cellAppearance
                             Cell(
                                 text = cellData.text,
                                 textColor = cellAppearance.textColorProvider(),
                                 backgroundColor = cellAppearance.backgroundColorProvider(),
                                 modifier = Modifier
-                                    .weight(cellWeight)
+                                    .weight(columnWidths.weightOf(column.id))
                                     .cellBasePadding(isFirst, isLast)
                             )
                         }
@@ -310,6 +154,106 @@ fun WaterfallTable(
             )
         }
     }
+}
+
+@Composable
+private fun ResizableTableHeader(
+    columns: List<ResizableColumn>,
+    columnWidths: TableColumnResizeState<Data.ColumnId>,
+    dividerColor: Color,
+) {
+    var headerWidthPx by remember { mutableStateOf(0f) }
+    val minColumnWidthPx = with(LocalDensity.current) { ColumnMinWidth.toPx() }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(28.dp)
+            .onSizeChanged { size -> headerWidthPx = size.width.toFloat() }
+            .bottomDivider(dividerColor)
+    ) {
+        for ((index, column) in columns.withIndex()) {
+            Box(
+                modifier = Modifier
+                    .weight(columnWidths.weightOf(column.id))
+                    .fillMaxHeight()
+            ) {
+                ColumnHeader(
+                    text = column.data.name,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .cellBasePadding(
+                            isFirst = index == 0,
+                            isLast = index == columns.lastIndex,
+                        )
+                )
+
+                columns.getOrNull(index + 1)?.let { nextColumn ->
+                    ColumnResizeHandle(
+                        dividerColor = dividerColor,
+                        onDragDelta = { deltaPx ->
+                            columnWidths.resize(
+                                firstColumnId = column.id,
+                                secondColumnId = nextColumn.id,
+                                deltaPx = deltaPx,
+                                containerWidthPx = headerWidthPx,
+                                minColumnWidthPx = minColumnWidthPx,
+                            )
+                        },
+                        modifier = Modifier.align(Alignment.CenterEnd),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ColumnResizeHandle(
+    dividerColor: Color,
+    onDragDelta: (Float) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isHovered by interactionSource.collectIsHoveredAsState()
+    val isDragged by interactionSource.collectIsDraggedAsState()
+    val dragState = rememberDraggableState(onDelta = onDragDelta)
+
+    Box(
+        modifier = modifier
+            .width(ResizeHandleHitAreaWidth)
+            .fillMaxHeight()
+            .hoverable(interactionSource)
+            .pointerHoverIcon(ResizePointerIcon)
+            .draggable(
+                state = dragState,
+                orientation = Orientation.Horizontal,
+                interactionSource = interactionSource,
+                startDragImmediately = true,
+            )
+            .drawBehind {
+                if (isHovered || isDragged) {
+                    val indicatorWidthPx = ResizeHandleIndicatorWidth.toPx()
+                    val verticalPaddingPx = ResizeHandleVerticalPadding.toPx()
+                    drawRoundRect(
+                        color = dividerColor,
+                        topLeft = Offset(
+                            x = size.width - indicatorWidthPx / 2,
+                            y = verticalPaddingPx,
+                        ),
+                        size = Size(
+                            width = indicatorWidthPx,
+                            height = size.height - verticalPaddingPx * 2,
+                        ),
+                        cornerRadius = CornerRadius(
+                            x = indicatorWidthPx / 2,
+                            y = indicatorWidthPx / 2,
+                        ),
+                        alpha = 0.6f,
+                    )
+                }
+            }
+    )
 }
 
 @Composable
@@ -421,10 +365,6 @@ object WaterfallTable {
             val backgroundColorProvider: @Composable () -> Color = { Color.Transparent },
             val textColorProvider: @Composable () -> Color = { MaterialTheme.colorScheme.onSurface },
         )
-
-        fun columnWeight(columnId: ColumnId): Float {
-            return columnsData[columnId]?.weight ?: return 0.0f
-        }
     }
 
     internal val previewData: Data
